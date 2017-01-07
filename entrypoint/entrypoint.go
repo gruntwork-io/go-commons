@@ -12,6 +12,11 @@ const defaultErrorExitCode = 1
 
 // Run the given app, handling errors, panics, and stack traces where possible
 func RunApp(app *cli.App) {
+	cli.OsExiter = func(exitCode int) {
+		// Do nothing. We just need to override this function, as the default value calls os.Exit, which
+		// kills the app (or any automated test) dead in its tracks.
+	}
+
 	defer errors.Recover(checkForErrorsAndExit)
 	err := app.Run(os.Args)
 	checkForErrorsAndExit(err)
