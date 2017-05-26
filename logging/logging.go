@@ -2,7 +2,6 @@ package logging
 
 import (
 	"github.com/Sirupsen/logrus"
-	"fmt"
 	"sync"
 )
 
@@ -37,14 +36,4 @@ func SetGlobalLogLevel(level logrus.Level) {
 	globalLogLevelLock.Lock()
 
 	globalLogLevel = level
-}
-
-// Return the name of the given logger as set by the GetLogger function or an empty string if this logger has no name
-func GetLoggerName(logger *logrus.Entry) string {
-	name, hasName := logger.Data[loggerNameField]
-	if hasName {
-		return fmt.Sprintf("%v", name)
-	} else {
-		return ""
-	}
 }

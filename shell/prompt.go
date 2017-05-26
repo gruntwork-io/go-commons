@@ -6,7 +6,6 @@ import (
 	"os"
 	"github.com/gruntwork-io/gruntwork-cli/errors"
 	"strings"
-	"github.com/gruntwork-io/gruntwork-cli/logging"
 	"github.com/fatih/color"
 )
 
@@ -14,10 +13,6 @@ var BRIGHT_GREEN = color.New(color.FgHiGreen, color.Bold)
 
 // Prompt the user for text in the CLI. Returns the text entered by the user.
 func PromptUserForInput(prompt string, options *ShellOptions) (string, error) {
-	loggerName := logging.GetLoggerName(options.Logger)
-	if loggerName != "" {
-		prompt = fmt.Sprintf("%s %s", loggerName, prompt)
-	}
 	BRIGHT_GREEN.Print(prompt)
 
 	if options.NonInteractive {
