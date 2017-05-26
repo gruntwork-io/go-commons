@@ -12,13 +12,19 @@ var globalLogLevel = logrus.InfoLevel
 var globalLogLevelLock = sync.Mutex{}
 
 // Create a new logger with the given name
-func GetLogger(name string) *logrus.Entry {
+func GetLogger(name string) *logrus.Logger {
 	logger := logrus.New()
+
 	logger.Level = globalLogLevel
+
+	logger.Formatter = &logrus.TextFormatter{
+		FullTimestamp: true,
+	}
+
 	if name != "" {
-		return logger.WithField(loggerNameField, name)
+		return logger.WithField(loggerNameField, name).Logger
 	} else {
-		return logger.WithFields(make(logrus.Fields))
+		return logger.WithFields(make(logrus.Fields)).Logger
 	}
 }
 
