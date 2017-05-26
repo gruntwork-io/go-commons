@@ -3,6 +3,7 @@ package errors
 import (
 	"fmt"
 	goerrors "github.com/go-errors/errors"
+	"github.com/urfave/cli"
 )
 
 // If this error is returned, the program should exit with the given exit code.
@@ -78,5 +79,17 @@ func Recover(onPanic func(cause error)) {
 			err = fmt.Errorf("%v", rec)
 		}
 		onPanic(WithStackTrace(err))
+	}
+}
+
+// Use this to wrap every command you add to *cli.App to handle panics by logging them with a stack trace and returning
+// an error up the chain.
+func WithPanicHandling(action func(*cli.Context) error) func(*cli.Context) error {
+	return func(context *cli.Context) (err error) {
+		defer Recover(func(cause error) {
+			err = cause
+		})
+
+		return action(context)
 	}
 }

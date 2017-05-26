@@ -27,7 +27,7 @@ func checkForErrorsAndExit(err error) {
 	exitCode := defaultSuccessExitCode
 
 	if err != nil {
-		logging.GetLogger("").WithError(err).Error()
+		logging.GetLogger("").WithError(err).Error(errors.PrintErrorWithStackTrace(err))
 
 		errorWithExitCode, isErrorWithExitCode := err.(errors.ErrorWithExitCode)
 		if isErrorWithExitCode {
