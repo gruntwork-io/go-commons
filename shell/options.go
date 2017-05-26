@@ -7,7 +7,7 @@ import (
 
 type ShellOptions struct {
 	NonInteractive bool
-	Logger         *logrus.Entry
+	Logger         *logrus.Logger
 	WorkingDir     string
 }
 
