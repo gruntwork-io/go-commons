@@ -11,7 +11,7 @@ imports:
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/mattn/go-zglob
   version: 2dbd7f37a45e993d5180a251b4bdd314d6333b70
-- name: github.com/Sirupsen/logrus
+- name: github.com/sirupsen/logrus
   version: 881bee4e20a5d11a6a88a5667c6f292072ac1963
 - name: github.com/stretchr/testify
   version: 2402e8e7a02fc811447d11f881aa9746cdc57983

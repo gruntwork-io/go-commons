@@ -98,7 +98,7 @@ given path is a file or a directory, reading a file as a string, and building re
 ### logging
 
 This package contains utilities for logging from our CLI apps. Instead of using Go's built-in logging library, we are 
-using [logrus](github.com/Sirupsen/logrus), as it supports log levels (INFO, WARN, DEBUG, etc), structured logging 
+using [logrus](github.com/sirupsen/logrus), as it supports log levels (INFO, WARN, DEBUG, etc), structured logging 
 (making key=value pairs easier to parse), log formatting (including text and JSON), hooks to connect logging to a 
 variety of external systems (e.g. syslog, airbrake, papertrail), and even hooks for automated testing.
  
