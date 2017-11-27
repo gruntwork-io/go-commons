@@ -128,5 +128,5 @@ This package contains two types of helpers:
 ## Running tests
 
 ```
-go test -v $(glide novendor)
+go test -v ./...
 ```
