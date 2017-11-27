@@ -3,6 +3,7 @@ package collections
 import (
 	"testing"
 	"github.com/stretchr/testify/assert"
+	"fmt"
 )
 
 func TestMergeMapsNoMaps(t *testing.T) {
@@ -116,4 +117,24 @@ func TestMergeMapsMultipleNonEmptyMapsOverlappingKeys(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, MergeMaps(map1, map2, map3))
+}
+
+func TestKeys(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		input	 map[string]string
+		expected []string
+	}{
+		{map[string]string{}, []string{}},
+		{map[string]string{"a": "foo"}, []string{"a"}},
+		{map[string]string{"a": "foo", "b": "bar", "c": "baz"}, []string{"a", "b", "c"}},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("%v", testCase.input), func(t *testing.T) {
+			actual := Keys(testCase.input)
+			assert.Equal(t, testCase.expected, actual)
+		})
+	}
 }
