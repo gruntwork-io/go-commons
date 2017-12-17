@@ -7,6 +7,7 @@ import (
 	"github.com/gruntwork-io/gruntwork-cli/errors"
 	"strings"
 	"github.com/fatih/color"
+	"github.com/bgentry/speakeasy"
 )
 
 var BRIGHT_GREEN = color.New(color.FgHiGreen, color.Bold)
@@ -45,3 +46,22 @@ func PromptUserForYesNo(prompt string, options *ShellOptions) (bool, error) {
 	}
 }
 
+// Prompt a user for a password or other sensitive info that should not be echoed back to stdout.
+func PromptUserForPassword(prompt string, options *ShellOptions) (string, error) {
+	BRIGHT_GREEN.Print(prompt)
+
+	if options.NonInteractive {
+		return "", errors.WithStackTrace(NonInteractivePasswordPrompt)
+	}
+
+	password, err := speakeasy.Ask("")
+	if err != nil {
+		return "", errors.WithStackTrace(err)
+	}
+
+	return password, nil
+}
+
+// Custom error types
+
+var NonInteractivePasswordPrompt = fmt.Errorf("The non-interactive flag is set, so unable to prompt user for a password.")

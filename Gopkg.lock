@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/bgentry/speakeasy"
+  packages = ["."]
+  revision = "4aabc24848ce5fd31929f7d1e4ea74d3709c14cd"
+  version = "v0.1.0"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -76,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "64a19bc8a730c8dc72ecc3b98e8c28bfc3f964990b4ed468eb85ab2290628e91"
+  inputs-digest = "5609dcd52d20d4af9104ab9c5c5a3f7085eaa7706a47125fb8113fd60d7ea804"
   solver-name = "gps-cdcl"
   solver-version = 1
