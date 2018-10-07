@@ -11,9 +11,14 @@ import (
 	"unicode"
 )
 
-const HELP_TEXT_LINE_WIDTH = 80
+// Override this to have custom line widths
+var HelpTextLineWidth = 80
 
-const CLI_APP_HELP_TEMPLATE = `Usage: {{.HelpName}} {{range $index, $option := .VisibleFlags}}[{{$option.GetName | PrefixedFirstFlagName}}] {{end}}{{if .Commands}}command [options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[args]{{end}}{{if .Description}}
+// This version of the app help template has the following changes over the default ones:
+// - Headers are title cased as opposed to all caps
+// - NAME, VERSION, AUTHOR, COPYRIGHT, and GLOBAL OPTIONS sections are removed
+// - Global options are displayed by name in the usage text
+const CLI_APP_HELP_TEMPLATE = `Usage: {{if .UsageText }}{{.UsageText}}{{else}}{{.HelpName}} {{range $index, $option := .VisibleFlags}}[{{$option.GetName | PrefixedFirstFlagName}}] {{end}}{{if .Commands}}command [options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[args]{{end}}{{if .Description}}
 
 {{.Description}}{{end}}{{if .Commands}}
 
@@ -22,6 +27,9 @@ Commands:
 {{range .Commands}}{{if not .HideHelp}}   {{join .Names ", "}}{{ "\t"}}{{.Usage}}{{ "\n" }}{{end}}{{end}}{{end}}{{if .VisibleFlags}}{{end}}
 `
 
+// This version of the command help template has the following changes over the default ones:
+// - Headers are title cased as opposed to all caps
+// - NAME and CATEGORY sections are removed
 const CLI_COMMAND_HELP_TEMPLATE = `Usage: {{if .UsageText}}{{.UsageText}}{{else}}{{.HelpName}}{{if .VisibleFlags}} [options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[args]{{end}}{{end}}{{if .Description}}
 
 {{.Description}}{{end}}{{if .VisibleFlags}}
@@ -51,21 +59,23 @@ func WrappedHelpPrinter(out io.Writer, templateString string, data interface{}) 
 
 	writer := tabwriter.NewWriter(out, 0, 8, 2, ' ', 0)
 	for _, line := range strings.Split(rendered.String(), "\n") {
-		tab := HelpTableAwareDetermineIndent(line, "\t+")
-		wrappedLine := TabAwareWrapText(line, HELP_TEXT_LINE_WIDTH, tab)
+		indent := HelpTableAwareDetermineIndent(line, "\t+")
+		wrappedLine := IndentAwareWrapText(line, HelpTextLineWidth, indent)
 		fmt.Fprintln(writer, wrappedLine)
 	}
 	writer.Flush()
 }
 
+// regexp version of strings.SplitAfter.
 // Similar functionality to regexp.Split, but returns the delimited strings
 // with the trailing delimiter appended to it.
 // Example:
 //    re := regexp.MustCompile("\\s+")
 //    text := "one two three"
-//    out := SplitKeepDelimiter(re, text)
+//    out := RegexpSplitAfter(re, text)
 //    out == ["one ", "two ", "three"]
-func SplitKeepDelimiter(re *regexp.Regexp, str string) (out []string) {
+func RegexpSplitAfter(re *regexp.Regexp, str string) []string {
+	var out []string
 	indexes := re.FindAllStringIndex(str, -1)
 	if indexes == nil {
 		return append(out, str)
@@ -82,10 +92,18 @@ func SplitKeepDelimiter(re *regexp.Regexp, str string) (out []string) {
 }
 
 // Wrap text to line width, while preserving any indentation
-func TabAwareWrapText(text string, lineWidth int, tab string) string {
+// Examples:
+// in:
+// text = `   exec\tExecute a command with temporary AWS credentials obtained by logging into Gruntwork Houston`
+// lineWidth = 80
+// indent = `       \t`
+// out:
+//    exec\tExecute a command with temporary AWS credentials obtained by
+//        \tlogging into Gruntwork Houston
+func IndentAwareWrapText(text string, lineWidth int, indent string) string {
 	wrapped := ""
 	re := regexp.MustCompile("\\s+")
-	words := SplitKeepDelimiter(re, text)
+	words := RegexpSplitAfter(re, text)
 	if len(words) == 0 {
 		return wrapped
 	}
@@ -107,7 +125,7 @@ func TabAwareWrapText(text string, lineWidth int, tab string) string {
 		trimmedWordLength := TabAwareStringLength(trimmedWord, tabLength)
 		if currentLineLength+trimmedWordLength > lineWidth {
 			wrapped = strings.TrimRightFunc(wrapped, unicode.IsSpace)
-			nextLine := tab + word
+			nextLine := indent + word
 			wrapped += "\n" + nextLine
 			currentLineLength = TabAwareStringLength(nextLine, tabLength)
 		} else {
@@ -123,7 +141,7 @@ func TabAwareStringLength(text string, tabLength int) int {
 	return len(strings.Replace(text, "\t", strings.Repeat(" ", tabLength), -1))
 }
 
-// Determine the tab string, accounting for textual tables.
+// Determine the indent string, accounting for textual tables.
 // Assumes only two columns, and there is a clear delimiter for them, like in
 // help text.
 func HelpTableAwareDetermineIndent(text string, tableDelimiterRe string) string {

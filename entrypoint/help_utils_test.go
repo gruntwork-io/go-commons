@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-var splitKeepDelimiterTests = []struct {
+var splitAfterTests = []struct {
 	in  string
 	out []string
 }{
@@ -18,16 +18,16 @@ var splitKeepDelimiterTests = []struct {
 	{"\nonetwothree", []string{"\n", "onetwothree"}},
 }
 
-func TestSplitKeepDelimiter(t *testing.T) {
-	for _, tt := range splitKeepDelimiterTests {
+func TestRegexpSplitAfterDelimiter(t *testing.T) {
+	for _, tt := range splitAfterTests {
 		t.Run(tt.in, func(t *testing.T) {
 			re := regexp.MustCompile("\\s+")
-			assert.Equal(t, SplitKeepDelimiter(re, tt.in), tt.out)
+			assert.Equal(t, RegexpSplitAfter(re, tt.in), tt.out)
 		})
 	}
 }
 
-var determineTabTests = []struct {
+var determineIndentTests = []struct {
 	in    string
 	delim string
 	out   string
@@ -38,10 +38,15 @@ var determineTabTests = []struct {
 	{"  one\ttwo", "\t", "     \t"},
 	{"  \ttwo", "\t", "  \t"},
 	{"  hello|world", "\\|", "        "},
+	{
+		"   exec\tExecute a command with temporary AWS credentials obtained by logging into Gruntwork Houston",
+		"\t",
+		"       \t",
+	},
 }
 
 func TestHelpTableAwareDetermineIndent(t *testing.T) {
-	for _, tt := range determineTabTests {
+	for _, tt := range determineIndentTests {
 		t.Run(tt.in, func(t *testing.T) {
 			assert.Equal(t, HelpTableAwareDetermineIndent(tt.in, tt.delim), tt.out)
 		})
@@ -49,33 +54,43 @@ func TestHelpTableAwareDetermineIndent(t *testing.T) {
 }
 
 var wrapTextTests = []struct {
-	in  string
-	out string
-	tab string
+	in        string
+	out       string
+	indent    string
+	lineWidth int
 }{
 	{
 		"    Great Scott!",
 		"    Great\n    Scott!",
 		"    ",
+		15,
 	},
 	{
 		"You made a time machine out of a Delorean!?",
 		"You made a time\nmachine out of\na Delorean!?",
 		"",
+		15,
 	},
 	{
 		"  fc\tThe box that",
 		"  fc\tThe\n    \tbox\n    \tthat",
 		"    \t",
+		15,
+	},
+	{
+		"   exec\tExecute a command with temporary AWS credentials obtained by logging into Gruntwork Houston",
+		"   exec\tExecute a command with temporary AWS credentials obtained by\n       \tlogging into Gruntwork Houston",
+		"       \t",
+		80,
 	},
 }
 
-func TestTabAwareWrapText(t *testing.T) {
+func TestIndentAwareWrapText(t *testing.T) {
 	for _, tt := range wrapTextTests {
 		t.Run(tt.in, func(t *testing.T) {
 			assert.Equal(
 				t,
-				TabAwareWrapText(tt.in, 15, tt.tab),
+				IndentAwareWrapText(tt.in, tt.lineWidth, tt.indent),
 				tt.out)
 		})
 	}
