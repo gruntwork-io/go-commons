@@ -18,14 +18,13 @@ var HelpTextLineWidth = 80
 // - Headers are title cased as opposed to all caps
 // - NAME, VERSION, AUTHOR, COPYRIGHT, and GLOBAL OPTIONS sections are removed
 // - Global options are displayed by name in the usage text
-const CLI_APP_HELP_TEMPLATE = `Usage: {{if .UsageText }}{{.UsageText}}{{else}}{{.HelpName}} {{range $index, $option := .VisibleFlags}}[{{$option.GetName | PrefixedFirstFlagName}}] {{end}}{{if .Commands}}command [options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[args]{{end}}{{if .Description}}
+const CLI_APP_HELP_TEMPLATE = `Usage: {{if .UsageText }}{{.UsageText}}{{else}}{{.HelpName}} {{range $index, $option := .VisibleFlags}}[{{$option.GetName | PrefixedFirstFlagName}}] {{end}}{{if .Commands}}command [options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[args]{{end}}{{end}}{{if .Description}}
 
 {{.Description}}{{end}}{{if .Commands}}
 
 Commands:
 
-{{range .Commands}}{{if not .HideHelp}}   {{join .Names ", "}}{{ "\t"}}{{.Usage}}{{ "\n" }}{{end}}{{end}}{{end}}{{if .VisibleFlags}}{{end}}
-`
+{{range .Commands}}{{if not .HideHelp}}   {{join .Names ", "}}{{ "\t"}}{{.Usage}}{{ "\n" }}{{end}}{{end}}{{end}}`
 
 // This version of the command help template has the following changes over the default ones:
 // - Headers are title cased as opposed to all caps
@@ -37,8 +36,7 @@ const CLI_COMMAND_HELP_TEMPLATE = `Usage: {{if .UsageText}}{{.UsageText}}{{else}
 Options:
 
    {{range .VisibleFlags}}{{.}}
-   {{end}}{{end}}
-`
+   {{end}}{{end}}`
 
 // HelpPrinter that will wrap the text at
 // HELP_TEXT_LINE_WIDTH characters, while preserving
