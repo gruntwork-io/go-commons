@@ -2,13 +2,24 @@ package entrypoint
 
 import (
 	"os"
+
 	"github.com/urfave/cli"
+
 	"github.com/gruntwork-io/gruntwork-cli/errors"
 	"github.com/gruntwork-io/gruntwork-cli/logging"
 )
 
 const defaultSuccessExitCode = 0
 const defaultErrorExitCode = 1
+
+// Wrapper around cli.NewApp that sets the help text printer.
+func NewApp() *cli.App {
+	cli.HelpPrinter = WrappedHelpPrinter
+	cli.AppHelpTemplate = CLI_APP_HELP_TEMPLATE
+	cli.CommandHelpTemplate = CLI_COMMAND_HELP_TEMPLATE
+	app := cli.NewApp()
+	return app
+}
 
 // Run the given app, handling errors, panics, and stack traces where possible
 func RunApp(app *cli.App) {

@@ -22,9 +22,12 @@ these built-in.
 
 ### entrypoint
 
-Most Gruntwork CLI apps should use this package to run their app, as it takes care of common tasks such as setting the
-proper exit code, rendering stack traces, and handling panics. Note that this package assumes you are using  
-[urfave/cli](https://github.com/urfave/cli), which is currently our library of choice for CLI apps.
+Most Gruntwork CLI apps should use this package to run their app, as it takes
+care of common tasks such as setting the proper exit code, rendering stack
+traces, handling panics, and rendering help text in a standard format. Note
+that this package assumes you are using
+[urfave/cli](https://github.com/urfave/cli), which is currently our library of
+choice for CLI apps.
 
 Here is the typical usage pattern in `main.go`:
 
@@ -45,8 +48,9 @@ import (
 var VERSION string
 
 func main() {
-      // Create a new CLI app with urfave/cli
-      app := cli.NewApp()
+      // Create a new CLI app. This will return a urfave/cli App with some
+      // common initialization.
+      app := entrypoint.NewApp()
     
       app.Name = "my-app"
       app.Author = "Gruntwork <www.gruntwork.io>"
