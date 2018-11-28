@@ -2,6 +2,7 @@ package shell
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -122,4 +123,13 @@ func readStdoutAndStderr(stdout io.ReadCloser, stderr io.ReadCloser, options *Sh
 func CommandInstalled(command string) bool {
 	_, err := exec.LookPath(command)
 	return err == nil
+}
+
+// CommandInstalledE returns an error if command is not installed
+func CommandInstalledE(command string) error {
+	if commandExists := CommandInstalled(command); !commandExists {
+		err := fmt.Errorf("Command %s is not installed", command)
+		return errors.WithStackTrace(err)
+	}
+	return nil
 }

@@ -40,6 +40,18 @@ func TestCommandInstalledOnInvalidCommand(t *testing.T) {
 	assert.False(t, CommandInstalled("not-a-real-command"))
 }
 
+func TestCommandInstalledEOnValidCommand(t *testing.T) {
+	t.Parallel()
+
+	assert.Nil(t, CommandInstalledE("echo"))
+}
+
+func TestCommandInstalledEOnInvalidCommand(t *testing.T) {
+	t.Parallel()
+
+	assert.NotNil(t, CommandInstalledE("not-a-real-command"))
+}
+
 // Test that when SensitiveArgs is true, do not log the args
 func TestSensitiveArgsTrueHidesOnRunShellCommand(t *testing.T) {
 	t.Parallel()
