@@ -45,7 +45,7 @@ func checkForErrorsAndExit(err error) {
 		if isDebugMode {
 			logging.GetLogger("").WithError(err).Error(errors.PrintErrorWithStackTrace(err))
 		} else {
-			fmt.Fprintf(os.Stderr, "ERROR: %s", errors.Unwrap(err))
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", errors.Unwrap(err))
 		}
 
 		errorWithExitCode, isErrorWithExitCode := err.(errors.ErrorWithExitCode)
