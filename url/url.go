@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// Create a URL with the given base and path parts. This method will properly URI encode everything and handle leading
-// and trailing slashes.
-func FormatUrl(baseUrl string, pathParts []string, query url.Values) (string, error) {
+// Create a URL with the given base, path parts, query string, and fragment. This method will properly URI encode
+// everything and handle leading and trailing slashes.
+func FormatUrl(baseUrl string, pathParts []string, query url.Values, fragment string) (string, error) {
 	parsedUrl, err := url.Parse(stripSlashes(baseUrl))
 	if err != nil {
 		return "", errors.WithStackTrace(err)
@@ -27,6 +27,7 @@ func FormatUrl(baseUrl string, pathParts []string, query url.Values) (string, er
 	}
 
 	parsedUrl.RawQuery = mergeQuery(parsedUrl.Query(), query).Encode()
+	parsedUrl.Fragment = fragment
 
 	return parsedUrl.String(), nil
 }
