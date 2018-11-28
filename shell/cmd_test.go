@@ -3,7 +3,6 @@ package shell
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/gruntwork-cli/logging"
@@ -53,8 +52,8 @@ func TestSensitiveArgsTrueHidesOnRunShellCommand(t *testing.T) {
 	options.Logger = logger
 
 	assert.Nil(t, RunShellCommand(options, "echo", "hi"))
-	assert.False(t, strings.Contains(buffer.String(), "hi"))
-	assert.True(t, strings.Contains(buffer.String(), "echo"))
+	assert.NotContains(t, buffer.String(), "hi")
+	assert.Contains(t, buffer.String(), "echo")
 }
 
 // Test that when SensitiveArgs is false, log the args
@@ -68,8 +67,8 @@ func TestSensitiveArgsFalseShowsOnRunShellCommand(t *testing.T) {
 	options.Logger = logger
 
 	assert.Nil(t, RunShellCommand(options, "echo", "hi"))
-	assert.True(t, strings.Contains(buffer.String(), "hi"))
-	assert.True(t, strings.Contains(buffer.String(), "echo"))
+	assert.Contains(t, buffer.String(), "hi")
+	assert.Contains(t, buffer.String(), "echo")
 }
 
 // Test that when SensitiveArgs is true, do not log the args
@@ -85,8 +84,8 @@ func TestSensitiveArgsTrueHidesOnRunShellCommandAndGetOutput(t *testing.T) {
 
 	_, err := RunShellCommandAndGetOutput(options, "echo", "hi")
 	assert.Nil(t, err)
-	assert.False(t, strings.Contains(buffer.String(), "hi"))
-	assert.True(t, strings.Contains(buffer.String(), "echo"))
+	assert.NotContains(t, buffer.String(), "hi")
+	assert.Contains(t, buffer.String(), "echo")
 }
 
 // Test that when SensitiveArgs is false, log the args
@@ -101,6 +100,6 @@ func TestSensitiveArgsFalseShowsOnRunShellCommandAndGetOutput(t *testing.T) {
 
 	_, err := RunShellCommandAndGetOutput(options, "echo", "hi")
 	assert.Nil(t, err)
-	assert.True(t, strings.Contains(buffer.String(), "hi"))
-	assert.True(t, strings.Contains(buffer.String(), "echo"))
+	assert.Contains(t, buffer.String(), "hi")
+	assert.Contains(t, buffer.String(), "echo")
 }
