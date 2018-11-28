@@ -36,10 +36,10 @@ func RunApp(app *cli.App) {
 }
 
 // If there is an error, display it in the console and exit with a non-zero exit code. Otherwise, exit 0.
-// Note that if the GRUNTWORK_DEBUG environment variable is set to 1, this will print out the stack trace.
+// Note that if the GRUNTWORK_DEBUG environment variable is set, this will print out the stack trace.
 func checkForErrorsAndExit(err error) {
 	exitCode := defaultSuccessExitCode
-	isDebugMode := os.Getenv(debugEnvironmentVarName) == "1"
+	isDebugMode := os.Getenv(debugEnvironmentVarName) != ""
 
 	if err != nil {
 		if isDebugMode {
