@@ -1,6 +1,7 @@
 package entrypoint
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/urfave/cli"
@@ -11,6 +12,7 @@ import (
 
 const defaultSuccessExitCode = 0
 const defaultErrorExitCode = 1
+const debugEnvironmentVarName = "GRUNTWORK_DEBUG"
 
 // Wrapper around cli.NewApp that sets the help text printer.
 func NewApp() *cli.App {
@@ -34,11 +36,17 @@ func RunApp(app *cli.App) {
 }
 
 // If there is an error, display it in the console and exit with a non-zero exit code. Otherwise, exit 0.
+// Note that if the GRUNTWORK_DEBUG environment variable is set, this will print out the stack trace.
 func checkForErrorsAndExit(err error) {
 	exitCode := defaultSuccessExitCode
+	isDebugMode := os.Getenv(debugEnvironmentVarName) != ""
 
 	if err != nil {
-		logging.GetLogger("").WithError(err).Error(errors.PrintErrorWithStackTrace(err))
+		if isDebugMode {
+			logging.GetLogger("").WithError(err).Error(errors.PrintErrorWithStackTrace(err))
+		} else {
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", errors.Unwrap(err))
+		}
 
 		errorWithExitCode, isErrorWithExitCode := err.(errors.ErrorWithExitCode)
 		if isErrorWithExitCode {
