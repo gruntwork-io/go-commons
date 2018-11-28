@@ -6,12 +6,25 @@ import (
 	"os"
 )
 
+type RequiredArgsError struct {
+	message string
+}
+
+func (err RequiredArgsError) Error() string {
+	return err.message
+}
+
+func NewRequiredArgsError(message string) error {
+	return &RequiredArgsError{message}
+}
+
 // StringFlagRequiredE checks if a required string flag is passed in on the CLI. This will return the set string, or an
 // error if the flag is not passed in.
 func StringFlagRequiredE(cliContext *cli.Context, flagName string) (string, error) {
 	value := cliContext.String(flagName)
 	if value == "" {
-		return "", fmt.Errorf("--%s is required", flagName)
+		message := fmt.Sprintf("--%s is required", flagName)
+		return "", NewRequiredArgsError(message)
 	}
 	return value, nil
 }
@@ -21,7 +34,8 @@ func StringFlagRequiredE(cliContext *cli.Context, flagName string) (string, erro
 func EnvironmentVarRequiredE(varName string) (string, error) {
 	value := os.Getenv(varName)
 	if value == "" {
-		return "", fmt.Errorf("The environment variable %s is required to be set", varName)
+		message := fmt.Sprintf("The environment variable %s is required to be set", varName)
+		return "", NewRequiredArgsError(message)
 	}
 	return value, nil
 }

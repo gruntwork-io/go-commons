@@ -15,6 +15,7 @@ func TestStringFlagRequiredOnMissingFlag(t *testing.T) {
 	app.Action = func(cliContext *cli.Context) error {
 		value, err := StringFlagRequiredE(cliContext, "the-answer-to-all-problems")
 		assert.NotNil(t, err)
+		assert.IsType(t, &RequiredArgsError{}, err)
 		assert.Equal(t, value, "")
 		return nil
 	}
@@ -39,6 +40,7 @@ func TestStringFlagRequiredOnSetFlag(t *testing.T) {
 func TestEnvironmentVarRequiredOnMissingEnvVar(t *testing.T) {
 	value, err := EnvironmentVarRequiredE("THE_ANSWER_TO_ALL_PROBLEMS")
 	assert.NotNil(t, err)
+	assert.IsType(t, &RequiredArgsError{}, err)
 	assert.Equal(t, value, "")
 }
 
