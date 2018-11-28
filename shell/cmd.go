@@ -1,18 +1,23 @@
 package shell
 
 import (
-	"os/exec"
-	"os"
-	"strings"
-	"github.com/gruntwork-io/gruntwork-cli/errors"
-	"io"
 	"bufio"
+	"io"
+	"os"
+	"os/exec"
+	"strings"
+
+	"github.com/gruntwork-io/gruntwork-cli/errors"
 )
 
 // Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
 // the currently running app.
-func RunShellCommand(options *ShellOptions, command string, args ... string) error {
-	options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
+func RunShellCommand(options *ShellOptions, command string, args ...string) error {
+	if options.SensitiveArgs {
+		options.Logger.Infof("Running command: %s (args redacted)", command)
+	} else {
+		options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
+	}
 
 	cmd := exec.Command(command, args...)
 
@@ -27,8 +32,12 @@ func RunShellCommand(options *ShellOptions, command string, args ... string) err
 }
 
 // Run the specified shell command with the specified arguments. Return its stdout and stderr as a string
-func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ... string) (string, error) {
-	options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
+func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ...string) (string, error) {
+	if options.SensitiveArgs {
+		options.Logger.Infof("Running command: %s (args redacted)", command)
+	} else {
+		options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
+	}
 
 	cmd := exec.Command(command, args...)
 
@@ -41,8 +50,12 @@ func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ...
 
 // Run the specified shell command with the specified arguments. Return its stdout and stderr as a string and also
 // stream stdout and stderr to the OS stdout/stderr
-func RunShellCommandAndGetAndStreamOutput(options *ShellOptions, command string, args ... string) (string, error) {
-	options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
+func RunShellCommandAndGetAndStreamOutput(options *ShellOptions, command string, args ...string) (string, error) {
+	if options.SensitiveArgs {
+		options.Logger.Infof("Running command: %s (args redacted)", command)
+	} else {
+		options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
+	}
 
 	cmd := exec.Command(command, args...)
 

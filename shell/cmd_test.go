@@ -1,8 +1,11 @@
 package shell
 
 import (
-	"testing"
+	"bytes"
 	"github.com/stretchr/testify/assert"
+	"testing"
+
+	"github.com/gruntwork-io/gruntwork-cli/logging"
 )
 
 func TestRunShellCommand(t *testing.T) {
@@ -35,4 +38,68 @@ func TestCommandInstalledOnInvalidCommand(t *testing.T) {
 	t.Parallel()
 
 	assert.False(t, CommandInstalled("not-a-real-command"))
+}
+
+// Test that when SensitiveArgs is true, do not log the args
+func TestSensitiveArgsTrueHidesOnRunShellCommand(t *testing.T) {
+	t.Parallel()
+
+	buffer := bytes.NewBufferString("")
+	logger := logging.GetLogger("")
+	logger.Out = buffer
+	options := NewShellOptions()
+	options.SensitiveArgs = true
+	options.Logger = logger
+
+	assert.Nil(t, RunShellCommand(options, "echo", "hi"))
+	assert.NotContains(t, buffer.String(), "hi")
+	assert.Contains(t, buffer.String(), "echo")
+}
+
+// Test that when SensitiveArgs is false, log the args
+func TestSensitiveArgsFalseShowsOnRunShellCommand(t *testing.T) {
+	t.Parallel()
+
+	buffer := bytes.NewBufferString("")
+	logger := logging.GetLogger("")
+	logger.Out = buffer
+	options := NewShellOptions()
+	options.Logger = logger
+
+	assert.Nil(t, RunShellCommand(options, "echo", "hi"))
+	assert.Contains(t, buffer.String(), "hi")
+	assert.Contains(t, buffer.String(), "echo")
+}
+
+// Test that when SensitiveArgs is true, do not log the args
+func TestSensitiveArgsTrueHidesOnRunShellCommandAndGetOutput(t *testing.T) {
+	t.Parallel()
+
+	buffer := bytes.NewBufferString("")
+	logger := logging.GetLogger("")
+	logger.Out = buffer
+	options := NewShellOptions()
+	options.SensitiveArgs = true
+	options.Logger = logger
+
+	_, err := RunShellCommandAndGetOutput(options, "echo", "hi")
+	assert.Nil(t, err)
+	assert.NotContains(t, buffer.String(), "hi")
+	assert.Contains(t, buffer.String(), "echo")
+}
+
+// Test that when SensitiveArgs is false, log the args
+func TestSensitiveArgsFalseShowsOnRunShellCommandAndGetOutput(t *testing.T) {
+	t.Parallel()
+
+	buffer := bytes.NewBufferString("")
+	logger := logging.GetLogger("")
+	logger.Out = buffer
+	options := NewShellOptions()
+	options.Logger = logger
+
+	_, err := RunShellCommandAndGetOutput(options, "echo", "hi")
+	assert.Nil(t, err)
+	assert.Contains(t, buffer.String(), "hi")
+	assert.Contains(t, buffer.String(), "echo")
 }
