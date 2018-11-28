@@ -1,6 +1,7 @@
 package entrypoint
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/urfave/cli"
@@ -41,11 +42,10 @@ func checkForErrorsAndExit(err error) {
 	isDebugMode := os.Getenv(debugEnvironmentVarName) == "1"
 
 	if err != nil {
-		logger := logging.GetLogger("").WithError(err)
 		if isDebugMode {
-			logger.Error(errors.PrintErrorWithStackTrace(err))
+			logging.GetLogger("").WithError(err).Error(errors.PrintErrorWithStackTrace(err))
 		} else {
-			logger.Error(errors.Unwrap(err))
+			fmt.Fprintf(os.Stderr, "ERROR: %s", errors.Unwrap(err))
 		}
 
 		errorWithExitCode, isErrorWithExitCode := err.(errors.ErrorWithExitCode)
