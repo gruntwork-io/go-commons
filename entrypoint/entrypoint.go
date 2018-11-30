@@ -19,6 +19,7 @@ func NewApp() *cli.App {
 	cli.HelpPrinter = WrappedHelpPrinter
 	cli.AppHelpTemplate = CLI_APP_HELP_TEMPLATE
 	cli.CommandHelpTemplate = CLI_COMMAND_HELP_TEMPLATE
+	cli.SubcommandHelpTemplate = CLI_APP_HELP_TEMPLATE
 	app := cli.NewApp()
 	return app
 }
