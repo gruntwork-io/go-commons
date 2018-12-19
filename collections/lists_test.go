@@ -1,15 +1,16 @@
 package collections
 
 import (
-	"testing"
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestListContainsElement(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		list	 []string
+		list     []string
 		element  string
 		expected bool
 	}{
@@ -31,7 +32,7 @@ func TestRemoveElementFromList(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		list	 []string
+		list     []string
 		element  string
 		expected []string
 	}{
@@ -50,3 +51,68 @@ func TestRemoveElementFromList(t *testing.T) {
 	}
 }
 
+func TestBatchListIntoGroupsOf(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		stringList []string
+		n          int
+		result     [][]string
+	}{
+		{
+			[]string{"macaroni", "gentoo", "magellanic", "adelie", "little", "king", "emperor"},
+			2,
+			[][]string{
+				[]string{"macaroni", "gentoo"},
+				[]string{"magellanic", "adelie"},
+				[]string{"little", "king"},
+				[]string{"emperor"},
+			},
+		},
+		{
+			[]string{"macaroni", "gentoo", "magellanic", "adelie", "king", "emperor"},
+			2,
+			[][]string{
+				[]string{"macaroni", "gentoo"},
+				[]string{"magellanic", "adelie"},
+				[]string{"king", "emperor"},
+			},
+		},
+		{
+			[]string{"macaroni", "gentoo", "magellanic"},
+			5,
+			[][]string{
+				[]string{"macaroni", "gentoo", "magellanic"},
+			},
+		},
+		{
+			[]string{"macaroni", "gentoo", "magellanic"},
+			5,
+			[][]string{
+				[]string{"macaroni", "gentoo", "magellanic"},
+			},
+		},
+		{
+			[]string{"macaroni", "gentoo", "magellanic"},
+			-1,
+			nil,
+		},
+		{
+			[]string{"macaroni", "gentoo", "magellanic"},
+			0,
+			nil,
+		},
+		{
+			[]string{},
+			7,
+			[][]string{},
+		},
+	}
+
+	for idx, testCase := range testCases {
+		t.Run(fmt.Sprintf("%s_%d", t.Name(), idx), func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, BatchListIntoGroupsOf(testCase.stringList, testCase.n), testCase.result)
+		})
+	}
+}
