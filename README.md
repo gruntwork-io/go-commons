@@ -1,3 +1,7 @@
+
+[![Maintained by Gruntwork.io](https://img.shields.io/badge/maintained%20by-gruntwork.io-%235849a6.svg)](https://gruntwork.io/?ref=repo_gruntwork-cli)
+[![GoDoc](https://godoc.org/github.com/gruntwork-io/gruntwork-cli?status.svg)](https://godoc.org/github.com/gruntwork-io/gruntwork-cli)
+
 # Gruntwork CLI
 
 This repo contains common libraries and helpers we can use to build Gruntwork CLI tools.
