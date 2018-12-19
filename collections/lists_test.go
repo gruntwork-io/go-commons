@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+func TestMakeCopyOfListMakesACopy(t *testing.T) {
+	original := []string{"foo", "bar", "baz"}
+	copyOfList := MakeCopyOfList(original)
+	assert.Equal(t, original, copyOfList)
+}
+
 func TestListContainsElement(t *testing.T) {
 	t.Parallel()
 
@@ -112,7 +118,10 @@ func TestBatchListIntoGroupsOf(t *testing.T) {
 	for idx, testCase := range testCases {
 		t.Run(fmt.Sprintf("%s_%d", t.Name(), idx), func(t *testing.T) {
 			t.Parallel()
+			original := MakeCopyOfList(testCase.stringList)
 			assert.Equal(t, BatchListIntoGroupsOf(testCase.stringList, testCase.n), testCase.result)
+			// Make sure the function doesn't modify the original list
+			assert.Equal(t, testCase.stringList, original)
 		})
 	}
 }
