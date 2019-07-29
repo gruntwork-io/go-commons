@@ -138,3 +138,8 @@ This package contains two types of helpers:
 ```
 go test -v ./...
 ```
+
+## License
+
+This code is released under the MIT License. See [LICENSE.txt](LICENSE.txt).
+
