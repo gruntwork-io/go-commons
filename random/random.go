@@ -3,8 +3,8 @@ package random
 
 import (
 	"bytes"
-	"math/rand"
-	"time"
+	"crypto/rand"
+	"math/big"
 )
 
 // Character sets that you can use when passing into RandomString
@@ -17,18 +17,16 @@ var Base62Chars = Digits + UpperLetters + LowerLetters
 
 // RandomString generates a random string of length strLength, composing only of characters in allowedChars. Based on
 // code here: http://stackoverflow.com/a/9543797/483528
-func RandomString(strLength int, allowedChars string) string {
+func RandomString(strLength int, allowedChars string) (string, error) {
 	var out bytes.Buffer
 
-	generator := newRand()
 	for i := 0; i < strLength; i++ {
-		out.WriteByte(allowedChars[generator.Intn(len(allowedChars))])
+		id, err := rand.Int(rand.Reader, big.NewInt(int64(len(allowedChars))))
+		if err != nil {
+			return out.String(), err
+		}
+		out.WriteByte(allowedChars[id.Int64()])
 	}
 
-	return out.String()
-}
-
-// newRand creates a new random number generator, seeding it with the current system time.
-func newRand() *rand.Rand {
-	return rand.New(rand.NewSource(time.Now().UnixNano()))
+	return out.String(), nil
 }
