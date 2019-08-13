@@ -27,7 +27,7 @@ func RunShellCommand(options *ShellOptions, command string, args ...string) erro
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	cmd.Dir = options.WorkingDir
+	setCommandOptions(options, cmd)
 
 	return errors.WithStackTrace(cmd.Run())
 }
@@ -43,7 +43,8 @@ func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ...
 	cmd := exec.Command(command, args...)
 
 	cmd.Stdin = os.Stdin
-	cmd.Dir = options.WorkingDir
+
+	setCommandOptions(options, cmd)
 
 	out, err := cmd.CombinedOutput()
 	return string(out), errors.WithStackTrace(err)
@@ -60,7 +61,7 @@ func RunShellCommandAndGetAndStreamOutput(options *ShellOptions, command string,
 
 	cmd := exec.Command(command, args...)
 
-	cmd.Dir = options.WorkingDir
+	setCommandOptions(options, cmd)
 
 	cmd.Stdin = os.Stdin
 
@@ -132,4 +133,21 @@ func CommandInstalledE(command string) error {
 		return errors.WithStackTrace(err)
 	}
 	return nil
+}
+
+// setCommandOptions takes the shell options and maps them to the configurations for the exec.Cmd object, applying them
+// to the passed in Cmd object.
+func setCommandOptions(options *ShellOptions, cmd *exec.Cmd) {
+	cmd.Dir = options.WorkingDir
+	cmd.Env = formatEnvVars(options)
+}
+
+// formatEnvVars takes environment variables encoded into ShellOptions and converts them to a format understood by
+// exec.Command
+func formatEnvVars(options *ShellOptions) []string {
+	env := os.Environ()
+	for key, value := range options.Env {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
+	}
+	return env
 }

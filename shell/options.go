@@ -9,7 +9,8 @@ type ShellOptions struct {
 	NonInteractive bool
 	Logger         *logrus.Logger
 	WorkingDir     string
-	SensitiveArgs  bool // If true, will not log the arguments to the command
+	SensitiveArgs  bool              // If true, will not log the arguments to the command
+	Env            map[string]string // Additional environment variables to set
 }
 
 func NewShellOptions() *ShellOptions {
@@ -18,5 +19,6 @@ func NewShellOptions() *ShellOptions {
 		Logger:         logging.GetLogger(""),
 		WorkingDir:     ".",
 		SensitiveArgs:  false,
+		Env:            map[string]string{},
 	}
 }

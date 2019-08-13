@@ -2,30 +2,50 @@ package shell
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"testing"
 
 	"github.com/gruntwork-io/gruntwork-cli/logging"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRunShellCommand(t *testing.T) {
 	t.Parallel()
 
-	assert.Nil(t, RunShellCommand(NewShellOptions(), "echo", "hi"))
+	assert.NoError(t, RunShellCommand(NewShellOptions(), "echo", "hi"))
 }
 
 func TestRunShellCommandInvalidCommand(t *testing.T) {
 	t.Parallel()
 
-	assert.NotNil(t, RunShellCommand(NewShellOptions(), "not-a-real-command"))
+	assert.Error(t, RunShellCommand(NewShellOptions(), "not-a-real-command"))
 }
 
 func TestRunShellCommandAndGetOutput(t *testing.T) {
 	t.Parallel()
 
 	out, err := RunShellCommandAndGetOutput(NewShellOptions(), "echo", "hi")
-	assert.Nil(t, err, "Unexpected error: %v", err)
+	assert.NoError(t, err)
 	assert.Equal(t, "hi\n", out)
+}
+
+func TestRunShellCommandWithEnv(t *testing.T) {
+	t.Parallel()
+
+	envVars := map[string]string{
+		"TEST_WITH_SPACES":  "test with spaces",
+		"TEST_WITH_EQUALS":  "test=with=equals",
+		"TEST_START_EQUALS": "=teststartequals",
+		"TEST_BLANK":        "",
+	}
+	options := NewShellOptions()
+	options.Env = envVars
+
+	for k, v := range envVars {
+		out, err := RunShellCommandAndGetOutput(options, "bash", "-c", fmt.Sprintf("echo $%s", k))
+		assert.NoError(t, err)
+		assert.Equal(t, fmt.Sprintf("%s\n", v), out)
+	}
 }
 
 func TestCommandInstalledOnValidCommand(t *testing.T) {
@@ -43,13 +63,13 @@ func TestCommandInstalledOnInvalidCommand(t *testing.T) {
 func TestCommandInstalledEOnValidCommand(t *testing.T) {
 	t.Parallel()
 
-	assert.Nil(t, CommandInstalledE("echo"))
+	assert.NoError(t, CommandInstalledE("echo"))
 }
 
 func TestCommandInstalledEOnInvalidCommand(t *testing.T) {
 	t.Parallel()
 
-	assert.NotNil(t, CommandInstalledE("not-a-real-command"))
+	assert.Error(t, CommandInstalledE("not-a-real-command"))
 }
 
 // Test that when SensitiveArgs is true, do not log the args
@@ -63,7 +83,7 @@ func TestSensitiveArgsTrueHidesOnRunShellCommand(t *testing.T) {
 	options.SensitiveArgs = true
 	options.Logger = logger
 
-	assert.Nil(t, RunShellCommand(options, "echo", "hi"))
+	assert.NoError(t, RunShellCommand(options, "echo", "hi"))
 	assert.NotContains(t, buffer.String(), "hi")
 	assert.Contains(t, buffer.String(), "echo")
 }
@@ -78,7 +98,7 @@ func TestSensitiveArgsFalseShowsOnRunShellCommand(t *testing.T) {
 	options := NewShellOptions()
 	options.Logger = logger
 
-	assert.Nil(t, RunShellCommand(options, "echo", "hi"))
+	assert.NoError(t, RunShellCommand(options, "echo", "hi"))
 	assert.Contains(t, buffer.String(), "hi")
 	assert.Contains(t, buffer.String(), "echo")
 }
@@ -95,7 +115,7 @@ func TestSensitiveArgsTrueHidesOnRunShellCommandAndGetOutput(t *testing.T) {
 	options.Logger = logger
 
 	_, err := RunShellCommandAndGetOutput(options, "echo", "hi")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotContains(t, buffer.String(), "hi")
 	assert.Contains(t, buffer.String(), "echo")
 }
@@ -111,7 +131,7 @@ func TestSensitiveArgsFalseShowsOnRunShellCommandAndGetOutput(t *testing.T) {
 	options.Logger = logger
 
 	_, err := RunShellCommandAndGetOutput(options, "echo", "hi")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Contains(t, buffer.String(), "hi")
 	assert.Contains(t, buffer.String(), "echo")
 }
