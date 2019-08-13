@@ -1,6 +1,7 @@
 package random
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,5 +29,18 @@ func TestRandomStringRespectsStrLen(t *testing.T) {
 		newStr, err := RandomString(i, Base62Chars)
 		require.NoError(t, err)
 		assert.Equal(t, len(newStr), i)
+	}
+}
+
+func TestRandomStringRespectsAllowedChars(t *testing.T) {
+	t.Parallel()
+
+	for i := 0; i < 100; i++ {
+		newStr, err := RandomString(10, Digits)
+		require.NoError(t, err)
+		// Since the new string should only be composed of digits, if RandomString respects allowed chars you should
+		// always be able to convert the string to an int
+		_, err = strconv.Atoi(newStr)
+		require.NoError(t, err)
 	}
 }
