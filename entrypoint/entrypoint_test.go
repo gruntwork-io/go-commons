@@ -2,10 +2,51 @@ package entrypoint
 
 import (
 	"bytes"
+	"fmt"
+	"testing"
+
+	"github.com/gruntwork-io/gruntwork-cli/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
-	"testing"
 )
+
+func TestEntrypointGetExitCode(t *testing.T) {
+	testCases := []struct {
+		name             string
+		err              error
+		expectedExitCode int
+	}{
+		{"TestNoError", nil, defaultSuccessExitCode},
+		{"TestNoErrorWithStackTrace", errors.WithStackTrace(nil), defaultSuccessExitCode},
+
+		{"TestBareError", fmt.Errorf("Broken"), defaultErrorExitCode},
+		{"TestBareErrorWithStackTrace", errors.WithStackTrace(fmt.Errorf("Broken")), defaultErrorExitCode},
+
+		{
+			"TestErrorWithExitCode",
+			errors.ErrorWithExitCode{
+				Err:      fmt.Errorf("Broken"),
+				ExitCode: 127,
+			},
+			127,
+		},
+		{
+			"TestErrorWithExitCodeWithStackTrace",
+			errors.WithStackTrace(
+				errors.ErrorWithExitCode{
+					Err:      fmt.Errorf("Broken"),
+					ExitCode: 127,
+				},
+			),
+			127,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.Equal(t, getExitCode(testCase.err), testCase.expectedExitCode)
+		})
+	}
+}
 
 func TestEntrypointNewAppWrapsAppHelpPrinter(t *testing.T) {
 	app := createSampleApp()
