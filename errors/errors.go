@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+
 	goerrors "github.com/go-errors/errors"
 	"github.com/urfave/cli"
 )
@@ -13,7 +14,7 @@ type ErrorWithExitCode struct {
 }
 
 func (err ErrorWithExitCode) Error() string {
-	return fmt.Sprintf("ErrorWithExitCode{ Err = %v, ExitCode = %d }", err.Err, err.ExitCode)
+	return err.Err.Error()
 }
 
 // Wrap the given error in an Error type that contains the stack trace. If the given error already has a stack trace,
