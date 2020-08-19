@@ -1,11 +1,10 @@
 package logging
 
 import (
-	"github.com/sirupsen/logrus"
 	"sync"
-)
 
-const loggerNameField = "name"
+	"github.com/sirupsen/logrus"
+)
 
 var globalLogLevel = logrus.InfoLevel
 var globalLogLevelLock = sync.Mutex{}
@@ -16,15 +15,14 @@ func GetLogger(name string) *logrus.Logger {
 
 	logger.Level = globalLogLevel
 
-	logger.Formatter = &logrus.TextFormatter{
-		FullTimestamp: true,
+	logger.Formatter = &TextFormatterWithBinName{
+		Name: name,
+		TextFormatter: logrus.TextFormatter{
+			FullTimestamp: true,
+		},
 	}
 
-	if name != "" {
-		return logger.WithField(loggerNameField, name).Logger
-	} else {
-		return logger.WithFields(make(logrus.Fields)).Logger
-	}
+	return logger
 }
 
 // Set the log level. Note: this ONLY affects loggers created using the GetLogger function AFTER this function has been
