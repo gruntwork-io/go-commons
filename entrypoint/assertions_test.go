@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func TestStringFlagRequiredOnMissingFlag(t *testing.T) {
@@ -54,7 +54,7 @@ func TestEnvironmentVarRequiredOnSetEnvVar(t *testing.T) {
 func createSampleAppWithRequiredFlag() *cli.App {
 	app := cli.NewApp()
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name: "the-answer-to-all-problems",
 		},
 	}
