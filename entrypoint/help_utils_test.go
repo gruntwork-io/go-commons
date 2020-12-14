@@ -3,8 +3,9 @@ package entrypoint
 import (
 	"regexp"
 
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var splitAfterTests = []struct {
@@ -21,7 +22,7 @@ var splitAfterTests = []struct {
 func TestRegexpSplitAfterDelimiter(t *testing.T) {
 	for _, tt := range splitAfterTests {
 		t.Run(tt.in, func(t *testing.T) {
-			re := regexp.MustCompile("\\s+")
+			re := regexp.MustCompile(`\s+`)
 			assert.Equal(t, RegexpSplitAfter(re, tt.in), tt.out)
 		})
 	}

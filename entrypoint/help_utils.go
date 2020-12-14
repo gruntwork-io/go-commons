@@ -68,7 +68,7 @@ func WrappedHelpPrinter(out io.Writer, templateString string, data interface{}) 
 // Similar functionality to regexp.Split, but returns the delimited strings
 // with the trailing delimiter appended to it.
 // Example:
-//    re := regexp.MustCompile("\\s+")
+//    re := regexp.MustCompile(`\s+`)
 //    text := "one two three"
 //    out := RegexpSplitAfter(re, text)
 //    out == ["one ", "two ", "three"]
@@ -100,7 +100,7 @@ func RegexpSplitAfter(re *regexp.Regexp, str string) []string {
 //        \tlogging into Gruntwork Houston
 func IndentAwareWrapText(text string, lineWidth int, indent string) string {
 	wrapped := ""
-	re := regexp.MustCompile("\\s+")
+	re := regexp.MustCompile(`\s+`)
 	words := RegexpSplitAfter(re, text)
 	if len(words) == 0 {
 		return wrapped
@@ -147,11 +147,11 @@ func HelpTableAwareDetermineIndent(text string, tableDelimiterRe string) string 
 	tableRe := regexp.MustCompile(tableDelimiterRe)
 	loc := tableRe.FindStringIndex(text)
 	if loc != nil {
-		return regexp.MustCompile("[^\\s]").ReplaceAllString(text[:loc[1]], " ")
+		return regexp.MustCompile(`[^\s]`).ReplaceAllString(text[:loc[1]], " ")
 	}
 
 	// ... otherwise, indent one
-	re := regexp.MustCompile("^\\s*")
+	re := regexp.MustCompile(`^\s*`)
 	loc = re.FindStringIndex(text)
 	if loc == nil {
 		return ""
