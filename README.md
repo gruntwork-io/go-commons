@@ -1,4 +1,3 @@
-
 [![Maintained by Gruntwork.io](https://img.shields.io/badge/maintained%20by-gruntwork.io-%235849a6.svg)](https://gruntwork.io/?ref=repo_gruntwork-cli)
 [![GoDoc](https://godoc.org/github.com/gruntwork-io/gruntwork-cli?status.svg)](https://godoc.org/github.com/gruntwork-io/gruntwork-cli)
 
@@ -41,28 +40,22 @@ package main
 import (
         "github.com/urfave/cli"
         "github.com/gruntwork-io/gruntwork-cli/entrypoint"
-)	
-
-// This variable is set at build time using -ldflags parameters. For example, we typically set this flag in circle.yml
-// to the latest Git tag when building our Go apps:
-//
-// build-go-binaries --app-name my-app --dest-path bin --ld-flags "-X main.VERSION=$CIRCLE_TAG"
-//
-// For more info, see: http://stackoverflow.com/a/11355611/483528
-var VERSION string
+        "github.com/gruntwork-io/gruntwork-cli/version"
+)
 
 func main() {
       // Create a new CLI app. This will return a urfave/cli App with some
       // common initialization.
       app := entrypoint.NewApp()
-    
+
       app.Name = "my-app"
       app.Author = "Gruntwork <www.gruntwork.io>"
-      
-      // Set the version number from your app from the VERSION variable that is passed in at build time
-      app.Version = VERSION
-      
-      app.Action = func(cliContext *cli.Context) error { 
+
+      // Set the version number from your app from the VERSION variable that is passed in at build time in `version` package
+      // for more understanding see github.com/gruntwork-io/gruntwork-cli/version
+      app.Version = version.Version()
+
+      app.Action = func(cliContext *cli.Context) error {
         // ( fill in your app details)
         return nil
       }
@@ -89,7 +82,7 @@ change in the future, so the rest of the code should not depend on `go-errors` d
 Here is how the `errors` package should be used:
 
 1. Any time you want to create your own error, create a custom type for it, and when instantiating that type, wrap it
-   with a call to `errors.WithStackTrace`. That way, any time you call a method defined in our own code, you know the 
+   with a call to `errors.WithStackTrace`. That way, any time you call a method defined in our own code, you know the
    error it returns already has a stacktrace and you don't have to wrap it yourself.
 1. Any time you get back an error object from a function built into Go or a 3rd party library, immediately wrap it with
    `errors.WithStackTrace`. This gives us a stacktrace as close to the source as possible.
@@ -100,18 +93,18 @@ Note that `entrypoint.RunApp` takes care of showing stack traces and handling ex
 
 ### files
 
-This package has a number of helpers for working with files and file paths, including one-liners for checking if a 
+This package has a number of helpers for working with files and file paths, including one-liners for checking if a
 given path is a file or a directory, reading a file as a string, and building relative and canonical file paths.
 
 ### logging
 
-This package contains utilities for logging from our CLI apps. Instead of using Go's built-in logging library, we are 
-using [logrus](github.com/sirupsen/logrus), as it supports log levels (INFO, WARN, DEBUG, etc), structured logging 
-(making key=value pairs easier to parse), log formatting (including text and JSON), hooks to connect logging to a 
+This package contains utilities for logging from our CLI apps. Instead of using Go's built-in logging library, we are
+using [logrus](github.com/sirupsen/logrus), as it supports log levels (INFO, WARN, DEBUG, etc), structured logging
+(making key=value pairs easier to parse), log formatting (including text and JSON), hooks to connect logging to a
 variety of external systems (e.g. syslog, airbrake, papertrail), and even hooks for automated testing.
- 
+
 To get a Logger, call the `logging.GetLogger` method:
- 
+
 ```go
 logger := logging.GetLogger("my-app")
 logger.Info("Something happened!")
@@ -142,4 +135,3 @@ go test -v ./...
 ## License
 
 This code is released under the MIT License. See [LICENSE.txt](LICENSE.txt).
-
