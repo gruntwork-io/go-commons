@@ -3,6 +3,7 @@ package shell
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/gruntwork-io/gruntwork-cli/logging"
@@ -27,6 +28,22 @@ func TestRunShellCommandAndGetOutput(t *testing.T) {
 	out, err := RunShellCommandAndGetOutput(NewShellOptions(), "echo", "hi")
 	assert.NoError(t, err)
 	assert.Equal(t, "hi\n", out)
+}
+
+func TestRunShellCommandAndGetStdoutReturnsStdout(t *testing.T) {
+	t.Parallel()
+
+	out, err := RunShellCommandAndGetStdout(NewShellOptions(), "echo", "hi")
+	assert.NoError(t, err)
+	assert.Equal(t, "hi\n", out)
+}
+
+func TestRunShellCommandAndGetStdoutDoesNotReturnStderr(t *testing.T) {
+	t.Parallel()
+
+	out, err := RunShellCommandAndGetStdout(NewShellOptions(), filepath.Join("test-fixture", "echo_hi_stderr.sh"))
+	assert.NoError(t, err)
+	assert.Equal(t, "", out)
 }
 
 func TestRunShellCommandWithEnv(t *testing.T) {

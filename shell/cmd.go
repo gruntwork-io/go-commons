@@ -14,12 +14,7 @@ import (
 // Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
 // the currently running app.
 func RunShellCommand(options *ShellOptions, command string, args ...string) error {
-	if options.SensitiveArgs {
-		options.Logger.Infof("Running command: %s (args redacted)", command)
-	} else {
-		options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
-	}
-
+	logCommand(options, command, args...)
 	cmd := exec.Command(command, args...)
 
 	// TODO: consider logging this via options.Logger
@@ -34,12 +29,7 @@ func RunShellCommand(options *ShellOptions, command string, args ...string) erro
 
 // Run the specified shell command with the specified arguments. Return its stdout and stderr as a string
 func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ...string) (string, error) {
-	if options.SensitiveArgs {
-		options.Logger.Infof("Running command: %s (args redacted)", command)
-	} else {
-		options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
-	}
-
+	logCommand(options, command, args...)
 	cmd := exec.Command(command, args...)
 
 	cmd.Stdin = os.Stdin
@@ -53,12 +43,7 @@ func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ...
 // Run the specified shell command with the specified arguments. Return its stdout and stderr as a string and also
 // stream stdout and stderr to the OS stdout/stderr
 func RunShellCommandAndGetAndStreamOutput(options *ShellOptions, command string, args ...string) (string, error) {
-	if options.SensitiveArgs {
-		options.Logger.Infof("Running command: %s (args redacted)", command)
-	} else {
-		options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
-	}
-
+	logCommand(options, command, args...)
 	cmd := exec.Command(command, args...)
 
 	setCommandOptions(options, cmd)
@@ -79,7 +64,65 @@ func RunShellCommandAndGetAndStreamOutput(options *ShellOptions, command string,
 		return "", errors.WithStackTrace(err)
 	}
 
-	output, err := readStdoutAndStderr(stdout, stderr, options)
+	output, err := readStdoutAndStderr(
+		stdout,
+		true,
+		stderr,
+		true,
+		options,
+	)
+	if err != nil {
+		return output, err
+	}
+
+	err = cmd.Wait()
+	return output, errors.WithStackTrace(err)
+}
+
+// Run the specified shell command with the specified arguments. Return its stdout as a string
+func RunShellCommandAndGetStdout(options *ShellOptions, command string, args ...string) (string, error) {
+	logCommand(options, command, args...)
+	cmd := exec.Command(command, args...)
+
+	cmd.Stdin = os.Stdin
+
+	setCommandOptions(options, cmd)
+
+	out, err := cmd.Output()
+	return string(out), errors.WithStackTrace(err)
+}
+
+// Run the specified shell command with the specified arguments. Return its stdout as a string and also stream stdout
+// and stderr to the OS stdout/stderr
+func RunShellCommandAndGetStdoutAndStreamOutput(options *ShellOptions, command string, args ...string) (string, error) {
+	logCommand(options, command, args...)
+	cmd := exec.Command(command, args...)
+
+	setCommandOptions(options, cmd)
+
+	cmd.Stdin = os.Stdin
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", errors.WithStackTrace(err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return "", errors.WithStackTrace(err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", errors.WithStackTrace(err)
+	}
+
+	output, err := readStdoutAndStderr(
+		stdout,
+		true,
+		stderr,
+		false,
+		options,
+	)
 	if err != nil {
 		return output, err
 	}
@@ -89,7 +132,13 @@ func RunShellCommandAndGetAndStreamOutput(options *ShellOptions, command string,
 }
 
 // This function captures stdout and stderr while still printing it to the stdout and stderr of this Go program
-func readStdoutAndStderr(stdout io.ReadCloser, stderr io.ReadCloser, options *ShellOptions) (string, error) {
+func readStdoutAndStderr(
+	stdout io.ReadCloser,
+	includeStdout bool,
+	stderr io.ReadCloser,
+	includeStderr bool,
+	options *ShellOptions,
+) (string, error) {
 	allOutput := []string{}
 
 	stdoutScanner := bufio.NewScanner(stdout)
@@ -99,11 +148,15 @@ func readStdoutAndStderr(stdout io.ReadCloser, stderr io.ReadCloser, options *Sh
 		if stdoutScanner.Scan() {
 			text := stdoutScanner.Text()
 			options.Logger.Println(text)
-			allOutput = append(allOutput, text)
+			if includeStdout {
+				allOutput = append(allOutput, text)
+			}
 		} else if stderrScanner.Scan() {
 			text := stderrScanner.Text()
 			options.Logger.Println(text)
-			allOutput = append(allOutput, text)
+			if includeStderr {
+				allOutput = append(allOutput, text)
+			}
 		} else {
 			break
 		}
@@ -118,6 +171,14 @@ func readStdoutAndStderr(stdout io.ReadCloser, stderr io.ReadCloser, options *Sh
 	}
 
 	return strings.Join(allOutput, "\n"), nil
+}
+
+func logCommand(options *ShellOptions, command string, args ...string) {
+	if options.SensitiveArgs {
+		options.Logger.Infof("Running command: %s (args redacted)", command)
+	} else {
+		options.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
+	}
 }
 
 // Return true if the OS has the given command installed
