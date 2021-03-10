@@ -125,7 +125,7 @@ func TestSSHRunCommand(t *testing.T) {
 			t.Run("publichostWithAgent", func(t *testing.T) {
 				t.Parallel()
 
-				sshAgent, err := SSHAgentWithPrivateKey(keyPair.KeyPair.PrivateKey)
+				sshAgent, err := SSHAgentWithPrivateKey(nil, keyPair.KeyPair.PrivateKey)
 				defer sshAgent.Stop()
 				require.NoError(t, err)
 				publicHostCopy := publicHost
