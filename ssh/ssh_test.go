@@ -2,7 +2,6 @@ package ssh
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -24,9 +23,9 @@ const (
 func TestSSHRunCommand(t *testing.T) {
 	t.Parallel()
 
-	os.Setenv("SKIP_setup", "true")
-	os.Setenv("SKIP_deploy", "true")
-	os.Setenv("SKIP_validate", "true")
+	//os.Setenv("SKIP_setup", "true")
+	//os.Setenv("SKIP_deploy", "true")
+	//os.Setenv("SKIP_validate", "true")
 	//os.Setenv("SKIP_teardown", "true")
 
 	workingDir := filepath.Join(".", "stages", t.Name())
@@ -66,21 +65,24 @@ func TestSSHRunCommand(t *testing.T) {
 		// Set up the Host struct to connect to each instance, using the required jump host for accessing the nested
 		// instances.
 		publicHost := Host{
-			Hostname:    publicInstanceIP,
-			PrivateKey:  keyPair.KeyPair.PrivateKey,
-			SSHUserName: "ubuntu",
+			Hostname:        publicInstanceIP,
+			PrivateKey:      keyPair.KeyPair.PrivateKey,
+			SSHUserName:     "ubuntu",
+			HostKeyCallback: NoOpHostKeyCallback,
 		}
 		privateHost := Host{
-			Hostname:    privateInstanceIP,
-			PrivateKey:  keyPair.KeyPair.PrivateKey,
-			SSHUserName: "ubuntu",
-			JumpHost:    &publicHost,
+			Hostname:        privateInstanceIP,
+			PrivateKey:      keyPair.KeyPair.PrivateKey,
+			SSHUserName:     "ubuntu",
+			JumpHost:        &publicHost,
+			HostKeyCallback: NoOpHostKeyCallback,
 		}
 		privateRestrictedHost := Host{
-			Hostname:    privateRestrictedInstanceIP,
-			PrivateKey:  keyPair.KeyPair.PrivateKey,
-			SSHUserName: "ubuntu",
-			JumpHost:    &privateHost,
+			Hostname:        privateRestrictedInstanceIP,
+			PrivateKey:      keyPair.KeyPair.PrivateKey,
+			SSHUserName:     "ubuntu",
+			JumpHost:        &privateHost,
+			HostKeyCallback: NoOpHostKeyCallback,
 		}
 
 		testCases := []struct {

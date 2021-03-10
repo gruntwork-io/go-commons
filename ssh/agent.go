@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
+// SSHAgent represents an instance of the ssh-agent process.
 type SSHAgent struct {
 	stop       chan bool
 	stopped    chan bool
@@ -26,7 +27,7 @@ type SSHAgent struct {
 
 // Create SSH agent, start it in background and returns control back to the main thread
 // You should stop the agent to cleanup files afterwards by calling `defer s.Stop()`
-func NewSSHAgent(socketDir string, socketFile string) (*SSHAgent, error) {
+func NewSSHAgent(logger *logrus.Entry, socketDir string, socketFile string) (*SSHAgent, error) {
 	var err error
 	s := &SSHAgent{
 		stop:       make(chan bool),
@@ -93,21 +94,21 @@ func (s *SSHAgent) Stop() {
 
 // Instantiates and returns an in-memory ssh agent with the given private key already added
 // You should stop the agent to cleanup files afterwards by calling `defer sshAgent.Stop()`
-func SSHAgentWithPrivateKey(privateKey string) (*SSHAgent, error) {
-	sshAgent, err := SSHAgentWithPrivateKeys([]string{privateKey})
+func SSHAgentWithPrivateKey(logger *logrus.Entry, privateKey string) (*SSHAgent, error) {
+	sshAgent, err := SSHAgentWithPrivateKeys(logger, []string{privateKey})
 	return sshAgent, err
 }
 
 // Instantiates and returns an in-memory ssh agent with the given private key(s) already added
 // You should stop the agent to cleanup files afterwards by calling `defer sshAgent.Stop()`
-func SSHAgentWithPrivateKeys(privateKeys []string) (*SSHAgent, error) {
+func SSHAgentWithPrivateKeys(logger *logrus.Entry, privateKeys []string) (*SSHAgent, error) {
 	// Instantiate a temporary SSH agent
 	socketDir, err := ioutil.TempDir("", "ssh-agent-")
 	if err != nil {
 		return nil, err
 	}
 	socketFile := filepath.Join(socketDir, "ssh_auth.sock")
-	sshAgent, err := NewSSHAgent(socketDir, socketFile)
+	sshAgent, err := NewSSHAgent(logger, socketDir, socketFile)
 	if err != nil {
 		return nil, err
 	}

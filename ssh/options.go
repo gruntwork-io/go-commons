@@ -24,6 +24,8 @@ type Host struct {
 
 	JumpHost *Host // Another host to use as a jump host to reach this host.
 
+	HostKeyCallback ssh.HostKeyCallback // Callback function for handling host key checks.
+
 	// set one or more authentication methods,
 	// the first valid method will be used
 	PrivateKey       string    // ssh private key to use as authentication method (disabled by default)
@@ -32,6 +34,8 @@ type Host struct {
 	Password         string    // plain text password (blank by default)
 }
 
+// getSSHConnectionOptions converts the host configuration into a set of options that can be used for managing the SSH
+// connection.
 func (host *Host) getSSHConnectionOptions() (*sshConnectionOptions, error) {
 	if host == nil {
 		return nil, nil
@@ -43,15 +47,16 @@ func (host *Host) getSSHConnectionOptions() (*sshConnectionOptions, error) {
 	}
 
 	hostOptions := sshConnectionOptions{
-		Username:    host.SSHUserName,
-		Address:     host.Hostname,
-		Port:        host.getPort(),
-		AuthMethods: authMethods,
+		Username:        host.SSHUserName,
+		Address:         host.Hostname,
+		Port:            host.getPort(),
+		HostKeyCallback: host.HostKeyCallback,
+		AuthMethods:     authMethods,
 	}
 	return &hostOptions, nil
 }
 
-// Gets the port that should be used to communicate with the host
+// getPort gets the port that should be used to communicate with the host
 func (h Host) getPort() int {
 
 	//If a CustomPort is not set use standard ssh port
@@ -62,7 +67,7 @@ func (h Host) getPort() int {
 	}
 }
 
-// Returns an array of authentication methods
+// createAuthMethods returns an array of authentication methods
 func (host Host) createAuthMethods() ([]ssh.AuthMethod, error) {
 	var methods []ssh.AuthMethod
 
@@ -117,6 +122,7 @@ type sshConnectionOptions struct {
 	Address         string
 	Port            int
 	AuthMethods     []ssh.AuthMethod
+	HostKeyCallback ssh.HostKeyCallback
 	Command         string
 	JumpHostOptions *sshConnectionOptions
 }
@@ -126,17 +132,26 @@ func (options *sshConnectionOptions) ConnectionString() string {
 	return net.JoinHostPort(options.Address, strconv.Itoa(options.Port))
 }
 
+// sshCloseStack is a LIFO (stack) data structure for tracking all the resources that need to be closed at the end of an
+// SSH connection. This is useful for having a single defer call in a top-level method to clean up resources that are
+// recursively created across multiple jump hosts.
 type sshCloseStack struct {
 	stack []Closeable
 }
 
+// Push will push an item on the close stack by prepending the item to the top of the array.
 func (this *sshCloseStack) Push(item Closeable) {
 	this.stack = append([]Closeable{item}, this.stack...)
 }
 
+// CloseAll iterates over all the closeable items and closes the connection one by one. This will attempt to close
+// everything in the stack regardless of errors, and return a single multierror at the end that aggregates all
+// encountered errors.
 func (this *sshCloseStack) CloseAll() error {
 	allErrs := &multierror.Error{}
 	for _, closeable := range this.stack {
+		// Closing a connection may result in an EOF error if it's already closed (e.g. due to hitting CTRL + D), so
+		// don't report those errors, as there is nothing actually wrong in that case.
 		allErrs = multierror.Append(allErrs, Close(closeable, io.EOF.Error()))
 	}
 	return allErrs.ErrorOrNil()

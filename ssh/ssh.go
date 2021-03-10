@@ -2,24 +2,41 @@
 package ssh
 
 import (
+	"fmt"
 	"net"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 )
 
-// RunCommandAndGetOutput will run the given command on the host over SSH and return the stdout of the underlying
+type outputReturnType int
+
+const (
+	stdout outputReturnType = iota
+	combined
+)
+
+// RunCommandAndGetStdout will run the given command on the host over SSH and return the stdout of the underlying
 // command.
-func RunCommandAndGetStdout(host Host, cmd string) (stdout string, returnErr error) {
+func RunCommandAndGetStdout(host Host, cmd string) (string, error) {
+	return runSSHCommand(host, cmd, stdout)
+}
+
+// RunCommandAndGetOutput will run the given command on the host over SSH and return the combined (stdout + stderr)
+// output.
+func RunCommandAndGetOutput(host Host, cmd string) (string, error) {
+	return runSSHCommand(host, cmd, combined)
+}
+
+// runSSHCommand will setup a new SSH connection to the given host, run the command, and return the stdout or combined
+// output depending on which output is requested.
+func runSSHCommand(host Host, cmd string, retType outputReturnType) (output string, returnErr error) {
 	hostOptions, err := setUpSSHOptions(host)
 	if err != nil {
 		return "", err
 	}
 	hostOptions.Command = cmd
-	return runSSHCommand(hostOptions)
-}
 
-func runSSHCommand(sshOptions *sshConnectionOptions) (stdout string, returnErr error) {
 	closeStack := &sshCloseStack{stack: []Closeable{}}
 	defer func() {
 		if err := closeStack.CloseAll(); err != nil && returnErr == nil {
@@ -27,7 +44,7 @@ func runSSHCommand(sshOptions *sshConnectionOptions) (stdout string, returnErr e
 		}
 	}()
 
-	client, err := setUpSSHClient(sshOptions, closeStack)
+	client, err := setUpSSHClient(hostOptions, closeStack)
 	if err != nil {
 		return "", err
 	}
@@ -38,10 +55,19 @@ func runSSHCommand(sshOptions *sshConnectionOptions) (stdout string, returnErr e
 		return "", err
 	}
 
-	bytes, err := session.Output(sshOptions.Command)
-	return string(bytes), err
+	switch retType {
+	case stdout:
+		bytes, err := session.Output(hostOptions.Command)
+		return string(bytes), err
+	case combined:
+		bytes, err := session.CombinedOutput(hostOptions.Command)
+		return string(bytes), err
+	}
+	return "", fmt.Errorf("runSSHCommand - This condition is impossible: UNKNOWN RETURN TYPE")
 }
 
+// setUpSSHOptions will configure SSHConnectionOptions for the given host, recursively configuring jump host connections
+// as needed.
 func setUpSSHOptions(host Host) (*sshConnectionOptions, error) {
 	hostOptions, err := host.getSSHConnectionOptions()
 	if err != nil {
@@ -58,13 +84,19 @@ func setUpSSHOptions(host Host) (*sshConnectionOptions, error) {
 	return hostOptions, nil
 }
 
+// setUpSSHClient will configure SSH client connections for the given host, recursively configuring jump host
+// connections as needed.
 func setUpSSHClient(currentOpts *sshConnectionOptions, closeStack *sshCloseStack) (*ssh.Client, error) {
+	// Base case: no more jump hosts defined
+	// Since there is no jump host, we directly configure the connection to the server.
 	if currentOpts.JumpHostOptions == nil {
 		client, err := createSSHClient(currentOpts)
 		closeStack.Push(client)
 		return client, err
 	}
 
+	// Here, we know there is a jump host connection that is needed to connect to this host, so we recursively set up
+	// the jump host connection and use that to connect to the host.
 	jumpHostClient, err := setUpSSHClient(currentOpts.JumpHostOptions, closeStack)
 	if err != nil {
 		return nil, err
@@ -94,17 +126,18 @@ func setUpSSHClient(currentOpts *sshConnectionOptions, closeStack *sshCloseStack
 	return client, nil
 }
 
+// createSSHClient configures a direct SSH connection to the given host connection option.
 func createSSHClient(options *sshConnectionOptions) (*ssh.Client, error) {
 	sshClientConfig := createSSHClientConfig(options)
 	return ssh.Dial("tcp", options.ConnectionString(), sshClientConfig)
 }
 
+// createSSHClientConfig returns the SSH client configuration to use when setting up the connection to the host.
 func createSSHClientConfig(hostOptions *sshConnectionOptions) *ssh.ClientConfig {
 	clientConfig := &ssh.ClientConfig{
-		User: hostOptions.Username,
-		Auth: hostOptions.AuthMethods,
-		// Do not do a host key check, as Terratest is only used for testing, not prod
-		HostKeyCallback: NoOpHostKeyCallback,
+		User:            hostOptions.Username,
+		Auth:            hostOptions.AuthMethods,
+		HostKeyCallback: hostOptions.HostKeyCallback,
 		// By default, Go does not impose a timeout, so a SSH connection attempt can hang for a LONG time.
 		Timeout: 10 * time.Second,
 	}
@@ -112,8 +145,8 @@ func createSSHClientConfig(hostOptions *sshConnectionOptions) *ssh.ClientConfig 
 	return clientConfig
 }
 
-// NoOpHostKeyCallback is an ssh.HostKeyCallback that does nothing. Only use this when you're sure you don't want to check the host key at all
-// (e.g., only for testing and non-production use cases).
+// NoOpHostKeyCallback is an ssh.HostKeyCallback that does nothing. Only use this when you're sure you don't want to
+// check the host key at all (e.g., only for testing and non-production use cases).
 func NoOpHostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	return nil
 }
