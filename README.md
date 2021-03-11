@@ -17,6 +17,7 @@ This repo contains the following packages:
 * files
 * logging
 * shell
+* ssh
 
 Each of these packages is described below.
 
@@ -127,6 +128,11 @@ This package contains two types of helpers:
 
 * `cmd.go`: This file contains helpers for running shell commands.
 * `prompt.go`: This file contains helpers for prompting the user for input (e.g. yes/no).
+
+### ssh
+
+This package contains helper methods for initiating SSH connections and running commands over the connection.
+
 
 ## Running tests
 
