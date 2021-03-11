@@ -119,7 +119,7 @@ func SSHAgentWithPrivateKeys(logger *logrus.Entry, privateKeys []string) (*SSHAg
 		block, _ := pem.Decode([]byte(privateKey))
 		decodedPrivateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 		if err != nil {
-			return nil, err
+			return sshAgent, err
 		}
 		key := agent.AddedKey{PrivateKey: decodedPrivateKey}
 		sshAgent.agent.Add(key)
