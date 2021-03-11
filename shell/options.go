@@ -1,7 +1,7 @@
 package shell
 
 import (
-	"github.com/gruntwork-io/gruntwork-cli/logging"
+	"github.com/gruntwork-io/go-commons/logging"
 	"github.com/sirupsen/logrus"
 )
 

@@ -10,7 +10,7 @@ import (
 	"github.com/bgentry/speakeasy"
 	"github.com/fatih/color"
 
-	"github.com/gruntwork-io/gruntwork-cli/errors"
+	"github.com/gruntwork-io/go-commons/errors"
 )
 
 var BRIGHT_GREEN = color.New(color.FgHiGreen, color.Bold)

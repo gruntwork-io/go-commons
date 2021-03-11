@@ -1,4 +1,4 @@
-module github.com/gruntwork-io/gruntwork-cli
+module github.com/gruntwork-io/go-commons
 
 go 1.13
 
