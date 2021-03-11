@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -114,16 +115,37 @@ func SSHAgentWithPrivateKeys(logger *logrus.Entry, privateKeys []string) (*SSHAg
 	}
 
 	// add given ssh keys to the newly created agent
+	var allErrs *multierror.Error
 	for _, privateKey := range privateKeys {
 		// Create SSH key for the agent using the given SSH key pair(s)
 		block, _ := pem.Decode([]byte(privateKey))
-		decodedPrivateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		decodedPrivateKey, err := decodePrivateKey(block.Bytes)
 		if err != nil {
-			return sshAgent, err
+			logger.Error("Error decoding private key for adding to ssh-agent")
+			allErrs = multierror.Append(allErrs, err)
+		} else {
+			key := agent.AddedKey{PrivateKey: decodedPrivateKey}
+			if err := sshAgent.agent.Add(key); err != nil {
+				logger.Error("Error adding private key ssh-agent")
+				allErrs = multierror.Append(allErrs, err)
+			}
 		}
-		key := agent.AddedKey{PrivateKey: decodedPrivateKey}
-		sshAgent.agent.Add(key)
 	}
+	return sshAgent, allErrs.ErrorOrNil()
+}
 
-	return sshAgent, err
+// decodePrivateKey first attempts to decode the key as PKCS8, and then fallsback to PKCS1 if that fails.
+// This function returns a *rsa.PrivateKey, a *ecdsa.PrivateKey, or a ed25519.PrivateKey.
+func decodePrivateKey(keyBytes []byte) (interface{}, error) {
+	var allErrs *multierror.Error
+	decodedPrivateKey, err := x509.ParsePKCS8PrivateKey(keyBytes)
+	if err != nil {
+		allErrs = multierror.Append(allErrs, err)
+		decodedPrivateKey, err = x509.ParsePKCS1PrivateKey(keyBytes)
+		if err != nil {
+			allErrs = multierror.Append(allErrs, err)
+			return nil, allErrs.ErrorOrNil()
+		}
+	}
+	return decodedPrivateKey, nil
 }
