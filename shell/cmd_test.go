@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gruntwork-io/gruntwork-cli/logging"
+	"github.com/gruntwork-io/go-commons/logging"
 	"github.com/stretchr/testify/assert"
 )
 

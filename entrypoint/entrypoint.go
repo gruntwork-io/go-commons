@@ -6,8 +6,8 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/gruntwork-io/gruntwork-cli/errors"
-	"github.com/gruntwork-io/gruntwork-cli/logging"
+	"github.com/gruntwork-io/go-commons/errors"
+	"github.com/gruntwork-io/go-commons/logging"
 )
 
 const defaultSuccessExitCode = 0

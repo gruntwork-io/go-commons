@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"io/ioutil"
-	"github.com/gruntwork-io/gruntwork-cli/errors"
+	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/mattn/go-zglob"
 )
 

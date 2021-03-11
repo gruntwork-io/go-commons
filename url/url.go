@@ -2,7 +2,7 @@ package url
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/gruntwork-cli/errors"
+	"github.com/gruntwork-io/go-commons/errors"
 	"net/url"
 	"strings"
 )

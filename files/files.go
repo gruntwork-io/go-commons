@@ -3,7 +3,7 @@ package files
 import (
 	"os"
 	"io/ioutil"
-	"github.com/gruntwork-io/gruntwork-cli/errors"
+	"github.com/gruntwork-io/go-commons/errors"
 )
 
 // Return true if the given file exists

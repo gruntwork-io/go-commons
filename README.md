@@ -1,9 +1,11 @@
-[![Maintained by Gruntwork.io](https://img.shields.io/badge/maintained%20by-gruntwork.io-%235849a6.svg)](https://gruntwork.io/?ref=repo_gruntwork-cli)
-[![GoDoc](https://godoc.org/github.com/gruntwork-io/gruntwork-cli?status.svg)](https://godoc.org/github.com/gruntwork-io/gruntwork-cli)
+[![Maintained by Gruntwork.io](https://img.shields.io/badge/maintained%20by-gruntwork.io-%235849a6.svg)](https://gruntwork.io/?ref=repo_go-commons)
+[![GoDoc](https://godoc.org/github.com/gruntwork-io/go-commons?status.svg)](https://godoc.org/github.com/gruntwork-io/go-commons)
 
-# Gruntwork CLI
+# Gruntwork Go Commons
 
-This repo contains common libraries and helpers we can use to build Gruntwork CLI tools.
+This repo contains common libraries and helpers used by Gruntwork for building CLI tools in Go.
+
+**NOTE: This repo was renamed from gruntwork-cli starting v0.8.0. Update your gruntwork-cli references to go-commons.**
 
 ## Packages
 
@@ -25,7 +27,7 @@ these built-in.
 
 ### entrypoint
 
-Most Gruntwork CLI apps should use this package to run their app, as it takes
+Most CLI apps built by Gruntwork should use this package to run their app, as it takes
 care of common tasks such as setting the proper exit code, rendering stack
 traces, handling panics, and rendering help text in a standard format. Note
 that this package assumes you are using
@@ -39,8 +41,8 @@ package main
 
 import (
         "github.com/urfave/cli"
-        "github.com/gruntwork-io/gruntwork-cli/entrypoint"
-        "github.com/gruntwork-io/gruntwork-cli/version"
+        "github.com/gruntwork-io/go-commons/entrypoint"
+        "github.com/gruntwork-io/go-commons/version"
 )
 
 func main() {
@@ -52,7 +54,7 @@ func main() {
       app.Author = "Gruntwork <www.gruntwork.io>"
 
       // Set the version number from your app from the VERSION variable that is passed in at build time in `version` package
-      // for more understanding see github.com/gruntwork-io/gruntwork-cli/version
+      // for more understanding see github.com/gruntwork-io/go-commons/version
       app.Version = version.Version()
 
       app.Action = func(cliContext *cli.Context) error {
