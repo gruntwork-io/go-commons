@@ -2,8 +2,9 @@ package entrypoint
 
 import (
 	"fmt"
-	"github.com/urfave/cli"
 	"os"
+
+	"github.com/urfave/cli"
 )
 
 type RequiredArgsError struct {
