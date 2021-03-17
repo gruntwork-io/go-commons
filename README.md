@@ -18,6 +18,7 @@ This repo contains the following packages:
 * logging
 * shell
 * ssh
+* retry
 
 Each of these packages is described below.
 
@@ -132,6 +133,10 @@ This package contains two types of helpers:
 ### ssh
 
 This package contains helper methods for initiating SSH connections and running commands over the connection.
+
+### retry
+
+This package contains helper methods for retrying an action up to a limit.
 
 
 ## Running tests
