@@ -19,6 +19,7 @@ This repo contains the following packages:
 * shell
 * ssh
 * retry
+* awscommons
 
 Each of these packages is described below.
 
@@ -137,6 +138,12 @@ This package contains helper methods for initiating SSH connections and running 
 ### retry
 
 This package contains helper methods for retrying an action up to a limit.
+
+### awscommons
+
+This package contains routines for interacting with AWS. Meant to provide high level interfaces used throughout various Gruntwork CLIs.
+
+Note that the routines in this package are adapted for `aws-sdk-go-v2`, not v1 (`aws-sdk-go`).
 
 
 ## Running tests
