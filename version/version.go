@@ -13,6 +13,6 @@ var (
 )
 
 // Version composes a version of the package
-func Version() string {
+func GetVersion() string {
 	return Version
 }
