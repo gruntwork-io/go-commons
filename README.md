@@ -55,9 +55,9 @@ func main() {
       app.Name = "my-app"
       app.Author = "Gruntwork <www.gruntwork.io>"
 
-      // Set the version number from your app from the VERSION variable that is passed in at build time in `version` package
+      // Set the version number from your app from the Version variable that is passed in at build time in `version` package
       // for more understanding see github.com/gruntwork-io/go-commons/version
-      app.Version = version.Version()
+      app.Version = version.GetVersion()
 
       app.Action = func(cliContext *cli.Context) error {
         // ( fill in your app details)
