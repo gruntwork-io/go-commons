@@ -1,57 +1,154 @@
 package lock
 
 import (
-	"os"
-	"os/signal"
+	"context"
+	"encoding/base64"
+	"fmt"
+	"time"
 
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
+	"github.com/gruntwork-io/gruntwork-cli/errors"
 )
 
-// Every type of lock must implement this interface
-type Lock interface {
-	// Acquire a lock
-	AcquireLock(terragruntOptions *options.TerragruntOptions) error
+// We assume that the DynamoDB table will be created prior to using this functionality. 
 
-	// Release a lock
-	ReleaseLock(terragruntOptions *options.TerragruntOptions) error
+// NewAuthenticatedSession gets an AWS Session, checking that the user has credentials properly configured in their environment.
+func NewAuthenticatedSession() (*session.Session, error) {
+	sess, err := session.NewSession(aws.NewConfig().WithRegion(ProjectAwsRegion))
+	if err != nil {
+		return nil, errors.WithStackTrace(err)
+	}
 
-	// Print a string representation of the lock
-	String() string
+	if _, err = sess.Config.Credentials.Get(); err != nil {
+		return nil, errors.WithStackTrace(err)
+	}
+
+	return sess, nil
 }
 
-// Acquire a lock, execute the given function, and release the lock
-func WithLock(lock Lock, terragruntOptions *options.TerragruntOptions, action func() error) (finalErr error) {
-	if err := lock.AcquireLock(terragruntOptions); err != nil {
+// NewDynamoDb returns an authenticated client object for accessing DynamoDb
+func NewDynamoDb() (*dynamodb.DynamoDB, error) {
+	sess, err := NewAuthenticatedSession()
+	if err != nil {
+		return nil, err
+	}
+	dynamodbSvc := dynamodb.New(sess)
+	return dynamodbSvc, nil
+}
+
+// AcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
+// configured region.
+func AcquireLock(lockString string	) error {
+	logger := GetProjectLogger()
+	logger.Infof(
+		"Attempting to acquire lock %s in table %s in region %s",
+		lockString,
+		ProjectLockTableName,
+		ProjectAwsRegion,
+	)
+
+	dynamodbSvc, err := NewDynamoDb()
+	if err != nil {
+		logger.Errorf("Error authenticating to AWS: %s", err)
 		return err
 	}
 
-	defer func() {
-		// We call ReleaseLock in a deferred function so that we release locks even in the case of a panic
-		err := lock.ReleaseLock(terragruntOptions)
-		if err != nil {
-			// We are using a named return variable so that if ReleaseLock returns an error, we can still
-			// return that error from a deferred function. However, if that named return variable is
-			// already set, that means the action executed and had an error, so we should return the
-			// action's error and only log the ReleaseLock error.
-			if finalErr == nil {
-				finalErr = err
-			} else {
-				terragruntOptions.Logger.Printf("ERROR: failed to release lock %s: %s", lock, errors.PrintErrorWithStackTrace(err))
-			}
-		}
-	}()
+	putParams := &dynamodb.PutItemInput{
+		Item: map[string]*dynamodb.AttributeValue{
+			"LockID": {S: aws.String(lockString)},
+		},
+		TableName:           aws.String(ProjectLockTableName),
+		ConditionExpression: aws.String("attribute_not_exists(LockID)"),
+	}
+	_, err = dynamodbSvc.PutItem(putParams)
+	if err != nil {
+		logger.Warnf(
+			"Error acquiring lock %s in table %s in region %s (already locked?): %s",
+			lockString,
+			ProjectLockTableName,
+			ProjectAwsRegion,
+			err,
+		)
+		return errors.WithStackTrace(err)
+	}
+	logger.Info("Acquired lock")
+	return nil
+}
 
-	// When Go receives the interrupt signal SIGINT (e.g. from someone hitting CTRL+C), the default behavior is to
-	// exit the program immediately. Here, we override that behavior, which ensures our deferred code has a chance
-	// to run and release the lock. Note that we don't have to do anything to cancel the running action, as
-	// Terraform itself automatically detects SIGINT and does a graceful shutdown in response, so we can just allow
-	// the blocking call to action() to return normally.
-	signalChannel := make(chan os.Signal, 1)
-	signal.Notify(signalChannel, os.Interrupt)
+// BlockingAcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table
+// for the configured region. This will retry on failure, until reaching timeout.
+func BlockingAcquireLock(lockString string) error {
+	logger := GetProjectLogger()
+	logger.Infof(
+		"Attempting to acquire lock %s in table %s in region %s, retrying on failure for up to %s",
+		lockString,
+		ProjectLockTableName,
+		ProjectAwsRegion,
+		ProjectLockRetryTimeout,
+	)
+
+	// Timeout logic inspired by terratest
+	// See: https://github.com/gruntwork-io/terratest/blob/master/modules/retry/retry.go
+	ctx, cancel := context.WithTimeout(context.Background(), ProjectLockRetryTimeout)
+	defer cancel()
+
+	doneChannel := make(chan bool, 1)
+
 	go func() {
-		terragruntOptions.Logger.Printf("Caught signal '%s'. Terraform should be shutting down gracefully now.", <-signalChannel)
+		for AcquireLock(lockString) != nil {
+			logger.Warnf("Failed to acquire lock %s. Retrying in 5 seconds...", lockString)
+			time.Sleep(5 * time.Second)
+		}
+		doneChannel <- true
 	}()
+	select {
+	case <-doneChannel:
+		logger.Infof("Successfully acquired lock %s", lockString)
+		return nil
+	case <-ctx.Done():
+		logger.Errorf("Timed out attempting to acquire lock %s", lockString)
+		return LockTimeoutExceeded{LockTable: ProjectLockTableName, LockString: lockString, Timeout: ProjectLockRetryTimeout}
+	}
+}
 
-	return action()
+// ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
+// configured region.
+func ReleaseLock(lockString string) error {
+	logger := GetProjectLogger()
+	logger.Infof(
+		"Attempting to release lock %s in table %s in region %s",
+		lockString,
+		ProjectLockTableName,
+		ProjectAwsRegion,
+	)
+
+	dynamodbSvc, err := NewDynamoDb()
+	if err != nil {
+		logger.Errorf("Error authenticating to AWS: %s", err)
+		return err
+	}
+
+	params := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"LockID": {S: aws.String(lockString)},
+		},
+		TableName: aws.String(ProjectLockTableName),
+	}
+	_, err = dynamodbSvc.DeleteItem(params)
+
+	if err != nil {
+		logger.Errorf(
+			"Error releasing lock %s in table %s in region %s: %s",
+			lockString,
+			ProjectLockTableName,
+			ProjectAwsRegion,
+			err,
+		)
+		return errors.WithStackTrace(err)
+	}
+	logger.Info("Released lock")
+	return nil
 }
