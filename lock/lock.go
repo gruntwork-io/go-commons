@@ -1,4 +1,4 @@
-package lock
+package main
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ProjectAwsRegion = "us-east-1"
-	ProjectLockTableName = "GuardDuty"
+	ProjectAwsRegion = "eu-central-1"
+	ProjectLockTableName = "test-dynamo-lock-eu-jam"
 	ProjectLockRetryTimeout = time.Minute
 )
 
@@ -56,7 +56,7 @@ func NewDynamoDb() (*dynamodb.DynamoDB, error) {
 
 // AcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
 // configured region.
-func AcquireLock(lockString string	) error {
+func AcquireLock(lockString string) error {
 	//TODO: Use a proper logging library
 	fmt.Printf("Attempting to acquire lock %s in table %s in region %s\n",
 		lockString,
@@ -163,4 +163,14 @@ func ReleaseLock(lockString string) error {
 	}
 	fmt.Printf("Released lock\n")
 	return nil
+}
+
+func main() {
+	lockString := "guardduty1141"
+	defer ReleaseLock(lockString)
+	err := BlockingAcquireLock(lockString)
+	time.Sleep(2 * time.Minute)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
