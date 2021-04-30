@@ -7,6 +7,7 @@ require (
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
+	github.com/gruntwork-io/gruntwork-cli v0.7.0
 	github.com/gruntwork-io/kubergrunt v0.6.10 // indirect
 	github.com/gruntwork-io/terragrunt v0.29.1
 	github.com/gruntwork-io/terratest v0.32.9

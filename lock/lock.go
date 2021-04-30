@@ -2,16 +2,31 @@ package lock
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/gruntwork-io/gruntwork-cli/errors"
 )
+
+var (
+	ProjectAwsRegion = "us-east-1"
+	ProjectLockTableName = "GuardDuty"
+	ProjectLockRetryTimeout = time.Minute
+)
+
+type LockTimeoutExceeded struct {
+	LockTable  string
+	LockString string
+	Timeout    time.Duration
+}
+
+func (err LockTimeoutExceeded) Error() string {
+	return fmt.Sprintf("Timedout trying to acquire lock %s in table %s (timeout was %s)", err.LockString, err.LockTable, err.Timeout)
+}
+
 
 // We assume that the DynamoDB table will be created prior to using this functionality. 
 
@@ -42,9 +57,8 @@ func NewDynamoDb() (*dynamodb.DynamoDB, error) {
 // AcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
 // configured region.
 func AcquireLock(lockString string	) error {
-	logger := GetProjectLogger()
-	logger.Infof(
-		"Attempting to acquire lock %s in table %s in region %s",
+	//TODO: Use a proper logging library
+	fmt.Printf("Attempting to acquire lock %s in table %s in region %s\n",
 		lockString,
 		ProjectLockTableName,
 		ProjectAwsRegion,
@@ -52,7 +66,7 @@ func AcquireLock(lockString string	) error {
 
 	dynamodbSvc, err := NewDynamoDb()
 	if err != nil {
-		logger.Errorf("Error authenticating to AWS: %s", err)
+		fmt.Printf("Error authenticating to AWS: %s\n", err)
 		return err
 	}
 
@@ -65,8 +79,8 @@ func AcquireLock(lockString string	) error {
 	}
 	_, err = dynamodbSvc.PutItem(putParams)
 	if err != nil {
-		logger.Warnf(
-			"Error acquiring lock %s in table %s in region %s (already locked?): %s",
+		fmt.Printf(
+			"Error acquiring lock %s in table %s in region %s (already locked?): %s\n",
 			lockString,
 			ProjectLockTableName,
 			ProjectAwsRegion,
@@ -74,15 +88,14 @@ func AcquireLock(lockString string	) error {
 		)
 		return errors.WithStackTrace(err)
 	}
-	logger.Info("Acquired lock")
+	fmt.Printf("Acquired lock\n")
 	return nil
 }
 
 // BlockingAcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
 func BlockingAcquireLock(lockString string) error {
-	logger := GetProjectLogger()
-	logger.Infof(
+	fmt.Printf(
 		"Attempting to acquire lock %s in table %s in region %s, retrying on failure for up to %s",
 		lockString,
 		ProjectLockTableName,
@@ -99,17 +112,17 @@ func BlockingAcquireLock(lockString string) error {
 
 	go func() {
 		for AcquireLock(lockString) != nil {
-			logger.Warnf("Failed to acquire lock %s. Retrying in 5 seconds...", lockString)
+			fmt.Printf("Failed to acquire lock %s. Retrying in 5 seconds...\n", lockString)
 			time.Sleep(5 * time.Second)
 		}
 		doneChannel <- true
 	}()
 	select {
 	case <-doneChannel:
-		logger.Infof("Successfully acquired lock %s", lockString)
+		fmt.Printf("Successfully acquired lock %s\n", lockString)
 		return nil
 	case <-ctx.Done():
-		logger.Errorf("Timed out attempting to acquire lock %s", lockString)
+		fmt.Printf("Timed out attempting to acquire lock %s\n", lockString)
 		return LockTimeoutExceeded{LockTable: ProjectLockTableName, LockString: lockString, Timeout: ProjectLockRetryTimeout}
 	}
 }
@@ -117,9 +130,8 @@ func BlockingAcquireLock(lockString string) error {
 // ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
 // configured region.
 func ReleaseLock(lockString string) error {
-	logger := GetProjectLogger()
-	logger.Infof(
-		"Attempting to release lock %s in table %s in region %s",
+	fmt.Printf(
+		"Attempting to release lock %s in table %s in region %s\n",
 		lockString,
 		ProjectLockTableName,
 		ProjectAwsRegion,
@@ -127,7 +139,7 @@ func ReleaseLock(lockString string) error {
 
 	dynamodbSvc, err := NewDynamoDb()
 	if err != nil {
-		logger.Errorf("Error authenticating to AWS: %s", err)
+		fmt.Printf("Error authenticating to AWS: %s\n", err)
 		return err
 	}
 
@@ -140,8 +152,8 @@ func ReleaseLock(lockString string) error {
 	_, err = dynamodbSvc.DeleteItem(params)
 
 	if err != nil {
-		logger.Errorf(
-			"Error releasing lock %s in table %s in region %s: %s",
+		fmt.Printf(
+			"Error releasing lock %s in table %s in region %s: %s\n",
 			lockString,
 			ProjectLockTableName,
 			ProjectAwsRegion,
@@ -149,6 +161,6 @@ func ReleaseLock(lockString string) error {
 		)
 		return errors.WithStackTrace(err)
 	}
-	logger.Info("Released lock")
+	fmt.Printf("Released lock\n")
 	return nil
 }
