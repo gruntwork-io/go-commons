@@ -1,4 +1,4 @@
-package locks
+package from_terragrunt
 
 import (
 	"fmt"
