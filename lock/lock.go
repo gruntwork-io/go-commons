@@ -1,4 +1,4 @@
-package main
+package lock
 
 import (
 	"context"
@@ -113,7 +113,7 @@ func BlockingAcquireLock(lockString string) error {
 	go func() {
 		for AcquireLock(lockString) != nil {
 			fmt.Printf("Failed to acquire lock %s. Retrying in 5 seconds...\n", lockString)
-			time.Sleep(5 * time.Second)
+			time.Sleep(time.Second * 5)
 		}
 		doneChannel <- true
 	}()
@@ -163,14 +163,4 @@ func ReleaseLock(lockString string) error {
 	}
 	fmt.Printf("Released lock\n")
 	return nil
-}
-
-func main() {
-	lockString := "guardduty1141"
-	defer ReleaseLock(lockString)
-	err := BlockingAcquireLock(lockString)
-	time.Sleep(2 * time.Minute)
-	if err != nil {
-		fmt.Println(err)
-	}
 }
