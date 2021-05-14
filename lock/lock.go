@@ -59,7 +59,7 @@ func NewDynamoDb() (*dynamodb.DynamoDB, error) {
 // AcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
 // configured region.
 func AcquireLock(log *logrus.Logger, lockString string) error {
-	log.Debugf("Attempting to acquire lock %s in table %s in region %s\n",
+	log.Infof("Attempting to acquire lock %s in table %s in region %s\n",
 		lockString,
 		ProjectLockTableName,
 		ProjectAwsRegion,
@@ -89,7 +89,7 @@ func AcquireLock(log *logrus.Logger, lockString string) error {
 		)
 		return errors.WithStackTrace(err)
 	}
-	log.Debugf("Acquired lock\n")
+	log.Infof("Acquired lock\n")
 	return nil
 }
 
@@ -98,7 +98,7 @@ func AcquireLock(log *logrus.Logger, lockString string) error {
 func BlockingAcquireLock(lockString string) error {
 	// Initialise logger
 	log := logging.GetLogger("")
-	log.Debugf(
+	log.Infof(
 		"Attempting to acquire lock %s in table %s in region %s, retrying on failure for up to %s",
 		lockString,
 		ProjectLockTableName,
@@ -115,14 +115,14 @@ func BlockingAcquireLock(lockString string) error {
 
 	go func() {
 		for AcquireLock(log, lockString) != nil {
-			log.Debugf("Failed to acquire lock %s. Retrying in 5 seconds...\n", lockString)
+			log.Infof("Failed to acquire lock %s. Retrying in 5 seconds...\n", lockString)
 			time.Sleep(time.Second * 5)
 		}
 		doneChannel <- true
 	}()
 	select {
 	case <-doneChannel:
-		log.Debugf("Successfully acquired lock %s\n", lockString)
+		log.Infof("Successfully acquired lock %s\n", lockString)
 		return nil
 	case <-ctx.Done():
 		log.Errorf("Timed out attempting to acquire lock %s\n", lockString)
@@ -133,7 +133,7 @@ func BlockingAcquireLock(lockString string) error {
 // ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
 // configured region.
 func ReleaseLock(log *logrus.Logger, lockString string) error {
-	log.Debugf(
+	log.Infof(
 		"Attempting to release lock %s in table %s in region %s\n",
 		lockString,
 		ProjectLockTableName,
@@ -164,6 +164,6 @@ func ReleaseLock(log *logrus.Logger, lockString string) error {
 		)
 		return errors.WithStackTrace(err)
 	}
-	log.Debugf("Released lock\n")
+	log.Infof("Released lock\n")
 	return nil
 }
