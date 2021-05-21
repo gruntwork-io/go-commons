@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/gruntwork-io/go-commons/logging"
 	"github.com/gruntwork-io/gruntwork-cli/errors"
 )
 
@@ -95,9 +94,7 @@ func AcquireLock(log *logrus.Logger, lockString string) error {
 
 // BlockingAcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
-func BlockingAcquireLock(lockString string) error {
-	// Initialise logger
-	log := logging.GetLogger("")
+func BlockingAcquireLock(log *logrus.Logger, lockString string) error {
 	log.Infof(
 		"Attempting to acquire lock %s in table %s in region %s, retrying on failure for up to %s",
 		lockString,
