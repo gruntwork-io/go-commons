@@ -112,8 +112,8 @@ func BlockingAcquireLock(log *logrus.Logger, lockString string) error {
 
 	go func() {
 		for AcquireLock(log, lockString) != nil {
-			log.Infof("Failed to acquire lock %s. Retrying in 5 seconds...\n", lockString)
-			time.Sleep(time.Second * 5)
+			log.Infof("Failed to acquire lock %s. Retrying in %s...\n", lockString, ProjectLockRetryTimeout.String())
+			time.Sleep(ProjectLockRetryTimeout)
 		}
 		doneChannel <- true
 	}()
