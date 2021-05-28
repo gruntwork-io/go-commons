@@ -10,14 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//set up one run with a lock for resource X
-//set up another run with the same lock for resource X
-// -> is expected to wait
-// -> is expected to fail creating a new lock as the first one is still in use
-// the first lock should release
-
-//func DoWithRetryableErrorsE(t testing.TestingT, actionDescription string, retryableErrors map[string]string, maxRetries int, sleepBetweenRetries time.Duration,
-//action func() (string, error)) (string, error) {
 func TestBlockingAcquireLock(t *testing.T) {
 	t.Parallel()
 
