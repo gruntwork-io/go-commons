@@ -1,8 +1,8 @@
 package lock
 
 import (
-	"context"
 	"fmt"
+	"github.com/gruntwork-io/go-commons/retry"
 	"github.com/sirupsen/logrus"
 	"time"
 
@@ -10,12 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gruntwork-io/gruntwork-cli/errors"
-)
-
-var (
-	ProjectAwsRegion = "eu-central-1"
-	ProjectLockTableName = "test-dynamo-lock-eu-jam"
-	ProjectLockRetryTimeout = time.Minute
 )
 
 type LockTimeoutExceeded struct {
@@ -31,8 +25,8 @@ func (err LockTimeoutExceeded) Error() string {
 
 // We assume that the DynamoDB table will be created prior to using this functionality. 
 // NewAuthenticatedSession gets an AWS Session, checking that the user has credentials properly configured in their environment.
-func NewAuthenticatedSession() (*session.Session, error) {
-	sess, err := session.NewSession(aws.NewConfig().WithRegion(ProjectAwsRegion))
+func NewAuthenticatedSession(awsRegion string) (*session.Session, error) {
+	sess, err := session.NewSession(aws.NewConfig().WithRegion(awsRegion))
 	if err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
@@ -46,8 +40,8 @@ func NewAuthenticatedSession() (*session.Session, error) {
 
 // We assume that the DynamoDB table will be created prior to using the locking mechanism
 // NewDynamoDb returns an authenticated client object for accessing DynamoDb
-func NewDynamoDb() (*dynamodb.DynamoDB, error) {
-	sess, err := NewAuthenticatedSession()
+func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
+	sess, err := NewAuthenticatedSession(awsRegion)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +51,14 @@ func NewDynamoDb() (*dynamodb.DynamoDB, error) {
 
 // AcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
 // configured region.
-func AcquireLock(log *logrus.Logger, lockString string) error {
+func AcquireLock(log *logrus.Logger, lockString string, lockTable string, awsRegion string) error {
 	log.Infof("Attempting to acquire lock %s in table %s in region %s\n",
 		lockString,
-		ProjectLockTableName,
-		ProjectAwsRegion,
+		lockTable,
+		awsRegion,
 	)
 
-	dynamodbSvc, err := NewDynamoDb()
+	dynamodbSvc, err := NewDynamoDb(awsRegion)
 	if err != nil {
 		log.Errorf("Error authenticating to AWS: %s\n", err)
 		return err
@@ -74,7 +68,7 @@ func AcquireLock(log *logrus.Logger, lockString string) error {
 		Item: map[string]*dynamodb.AttributeValue{
 			"LockID": {S: aws.String(lockString)},
 		},
-		TableName:           aws.String(ProjectLockTableName),
+		TableName:           aws.String(lockTable),
 		ConditionExpression: aws.String("attribute_not_exists(LockID)"),
 	}
 	_, err = dynamodbSvc.PutItem(putParams)
@@ -82,8 +76,8 @@ func AcquireLock(log *logrus.Logger, lockString string) error {
 		log.Errorf(
 			"Error acquiring lock %s in table %s in region %s (already locked?): %s\n",
 			lockString,
-			ProjectLockTableName,
-			ProjectAwsRegion,
+			lockTable,
+			awsRegion,
 			err,
 		)
 		return errors.WithStackTrace(err)
@@ -94,50 +88,45 @@ func AcquireLock(log *logrus.Logger, lockString string) error {
 
 // BlockingAcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
-func BlockingAcquireLock(log *logrus.Logger, lockString string) error {
+func BlockingAcquireLock(
+	log *logrus.Logger,
+	lockString string,
+	lockTable string,
+	awsRegion string,
+	maxRetries int,
+	sleepBetweenRetries time.Duration,
+	) error {
 	log.Infof(
-		"Attempting to acquire lock %s in table %s in region %s, retrying on failure for up to %s",
+		"Attempting to acquire lock %s in table %s in region %s, retrying on failure for up to %d times %s",
 		lockString,
-		ProjectLockTableName,
-		ProjectAwsRegion,
-		ProjectLockRetryTimeout,
+		lockTable,
+		awsRegion,
+		maxRetries,
+		sleepBetweenRetries,
 	)
 
-	// Timeout logic inspired by terratest
-	// See: https://github.com/gruntwork-io/terratest/blob/master/modules/retry/retry.go
-	ctx, cancel := context.WithTimeout(context.Background(), ProjectLockRetryTimeout)
-	defer cancel()
-
-	doneChannel := make(chan bool, 1)
-
-	go func() {
-		for AcquireLock(log, lockString) != nil {
-			log.Infof("Failed to acquire lock %s. Retrying in %s...\n", lockString, ProjectLockRetryTimeout.String())
-			time.Sleep(ProjectLockRetryTimeout)
-		}
-		doneChannel <- true
-	}()
-	select {
-	case <-doneChannel:
-		log.Infof("Successfully acquired lock %s\n", lockString)
-		return nil
-	case <-ctx.Done():
-		log.Errorf("Timed out attempting to acquire lock %s\n", lockString)
-		return LockTimeoutExceeded{LockTable: ProjectLockTableName, LockString: lockString, Timeout: ProjectLockRetryTimeout}
-	}
+	return retry.DoWithRetry(
+		log,
+		fmt.Sprintf("Trying to acquire DynamoDB lock %s at table %s", lockString, lockTable),
+		maxRetries,
+		sleepBetweenRetries,
+		func() error {
+			return AcquireLock(log, lockString, lockTable, awsRegion)
+		},
+		)
 }
 
 // ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
 // configured region.
-func ReleaseLock(log *logrus.Logger, lockString string) error {
+func ReleaseLock(log *logrus.Logger, lockString string, lockTable string, awsRegion string) error {
 	log.Infof(
 		"Attempting to release lock %s in table %s in region %s\n",
 		lockString,
-		ProjectLockTableName,
-		ProjectAwsRegion,
+		lockTable,
+		awsRegion,
 	)
 
-	dynamodbSvc, err := NewDynamoDb()
+	dynamodbSvc, err := NewDynamoDb(awsRegion)
 	if err != nil {
 		log.Errorf("Error authenticating to AWS: %s\n", err)
 		return err
@@ -147,7 +136,7 @@ func ReleaseLock(log *logrus.Logger, lockString string) error {
 		Key: map[string]*dynamodb.AttributeValue{
 			"LockID": {S: aws.String(lockString)},
 		},
-		TableName: aws.String(ProjectLockTableName),
+		TableName: aws.String(lockTable),
 	}
 	_, err = dynamodbSvc.DeleteItem(params)
 
@@ -155,8 +144,8 @@ func ReleaseLock(log *logrus.Logger, lockString string) error {
 		log.Errorf(
 			"Error releasing lock %s in table %s in region %s: %s\n",
 			lockString,
-			ProjectLockTableName,
-			ProjectAwsRegion,
+			lockTable,
+			awsRegion,
 			err,
 		)
 		return errors.WithStackTrace(err)

@@ -1,9 +1,10 @@
 package lock
 
 import (
-	"testing"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"testing"
+	"time"
 
 	"github.com/gruntwork-io/go-commons/logging"
 	"github.com/stretchr/testify/assert"
@@ -21,27 +22,31 @@ func TestBlockingAcquireLock(t *testing.T) {
 	t.Parallel()
 
 	lockString := "guardduty-blocking-acquire-lock-test"
+	maxRetries := 2
+	lockTable := "test-dynamo-lock-eu-jam"
+	awsRegion := "eu-central-1"
+	sleepBetweenRetries := 1 * time.Second
 
-	log := logging.GetLogger("")
+	log := logging.GetLogger("test")
 
-	defer assertLockReleased(t, lockString, ProjectLockTableName)
-	defer ReleaseLock(log, lockString)
+	defer assertLockReleased(t, lockString, lockTable, awsRegion)
+	defer ReleaseLock(log, lockString, lockTable, awsRegion)
 
-	//err := BlockingAcquireLock(log, lockString, maxRetries, sleep)
-	//err := BlockingAcquireLock(log, lockString, 3, 30 * time.Second)
-	err := BlockingAcquireLock(log, lockString)
+	log.Infof("Acquiring first lock")
+	err := BlockingAcquireLock(log, lockString, lockTable, awsRegion, maxRetries, sleepBetweenRetries)
 	assert.NoError(t, err)
-	//acquire the lock for resource X again shortly after
-	//err = BlockingAcquireLock(log, lockString, 2, 5 * time.Second)
-	err = BlockingAcquireLock(log, lockString)
+
+	log.Infof("Acquiring second lock")
+	err = BlockingAcquireLock(log, lockString, lockTable, awsRegion, maxRetries, sleepBetweenRetries)
+
 	if err == nil {
-		// FAILS THE TEST
+		assert.Fail(t, "Acquiring of second lock succeeded, but it was expected to fail.")
 	}
 
 }
 
-func assertLockReleased(t *testing.T, lockString string, lockTable string) {
-	dynamodbSvc, dbErr := NewDynamoDb()
+func assertLockReleased(t *testing.T, lockString string, lockTable string, awsRegion string) {
+	dynamodbSvc, dbErr := NewDynamoDb(awsRegion)
 	assert.NoError(t, dbErr)
 
 	getItemParams := &dynamodb.GetItemInput{
