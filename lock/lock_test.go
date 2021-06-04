@@ -3,6 +3,7 @@ package lock
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -16,8 +17,8 @@ func TestAcquireLockWithRetries(t *testing.T) {
 
 	var options = Options {
 		logging.GetLogger("test"),
-		"test-dynamo-lock-eu-jam",
-		"guardduty-blocking-acquire-lock-test",
+		"test-dynamodb-lock-string-" + random.UniqueId(),
+		"test-dynamodb-lock-table-" + random.UniqueId(),
 		"eu-central-1",
 		2,
 		1 * time.Second,
