@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBlockingAcquireLock(t *testing.T) {
+func TestAcquireLockWithRetries(t *testing.T) {
 	t.Parallel()
 
 	lockString := "guardduty-blocking-acquire-lock-test"
@@ -25,11 +25,11 @@ func TestBlockingAcquireLock(t *testing.T) {
 	defer ReleaseLock(log, lockString, lockTable, awsRegion)
 
 	log.Infof("Acquiring first lock")
-	err := BlockingAcquireLock(log, lockString, lockTable, awsRegion, maxRetries, sleepBetweenRetries)
+	err := AcquireLockWithRetries(log, lockString, lockTable, awsRegion, maxRetries, sleepBetweenRetries)
 	assert.NoError(t, err)
 
 	log.Infof("Acquiring second lock")
-	err = BlockingAcquireLock(log, lockString, lockTable, awsRegion, maxRetries, sleepBetweenRetries)
+	err = AcquireLockWithRetries(log, lockString, lockTable, awsRegion, maxRetries, sleepBetweenRetries)
 
 	if err == nil {
 		assert.Fail(t, "Acquiring of second lock succeeded, but it was expected to fail.")

@@ -90,9 +90,9 @@ func AcquireLock(log *logrus.Logger, lockString string, lockTable string, awsReg
 	return nil
 }
 
-// BlockingAcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table
+// AcquireLockWithRetries will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
-func BlockingAcquireLock(
+func AcquireLockWithRetries(
 	log *logrus.Logger,
 	lockString string,
 	lockTable string,
