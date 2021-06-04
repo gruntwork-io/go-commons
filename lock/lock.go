@@ -2,15 +2,14 @@ package lock
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/gruntwork-io/go-commons/retry"
-	"github.com/sirupsen/logrus"
-	"time"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gruntwork-io/go-commons/errors"
+	"github.com/gruntwork-io/go-commons/retry"
+	"github.com/sirupsen/logrus"
+	"time"
 )
 
 // Terraform requires the DynamoDB table to have a primary key with this name
@@ -95,64 +94,57 @@ func AcquireLock(options *Options) error {
 		}
 	}
 
-	return acquireLockWithRetries(options.Logger, options.LockString, options.LockTable, options.AwsRegion, options.MaxRetries, options.SleepBetweenRetries)
+	return acquireLockWithRetries(options, client)
 }
 
 // AcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
 // configured region.
-func acquireLock(log *logrus.Logger, lockString string, lockTable string, awsRegion string) error {
-	log.Infof("Attempting to acquire lock %s in table %s in region %s\n",
-		lockString,
-		lockTable,
-		awsRegion,
+func acquireLock(options *Options, client *dynamodb.DynamoDB) error {
+	options.Logger.Infof("Attempting to acquire lock %s in table %s in region %s\n",
+		options.LockString,
+		options.LockTable,
+		options.AwsRegion,
 	)
 
-	dynamodbSvc, err := NewDynamoDb(awsRegion)
+	dynamodbSvc, err := NewDynamoDb(options.AwsRegion)
 	if err != nil {
-		log.Errorf("Error authenticating to AWS: %s\n", err)
+		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
 		return err
 	}
 
 	putParams := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
-			"LockID": {S: aws.String(lockString)},
+			attributeLockId: {S: aws.String(options.LockString)},
 		},
-		TableName:           aws.String(lockTable),
-		ConditionExpression: aws.String("attribute_not_exists(LockID)"),
+		TableName:           aws.String(options.LockTable),
+		ConditionExpression: aws.String(fmt.Sprintf("attribute_not_exists(%s)", attributeLockId)),
 	}
 	_, err = dynamodbSvc.PutItem(putParams)
 	if err != nil {
-		log.Errorf(
+		options.Logger.Errorf(
 			"Error acquiring lock %s in table %s in region %s (already locked?): %s\n",
-			lockString,
-			lockTable,
-			awsRegion,
+			options.LockString,
+			options.LockTable,
+			options.AwsRegion,
 			err,
 		)
 		return errors.WithStackTrace(err)
 	}
-	log.Infof("Acquired lock\n")
+	options.Logger.Infof("Acquired lock\n")
 	return nil
 }
 
 // AcquireLockWithRetries will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
-func acquireLockWithRetries(
-	log *logrus.Logger,
-	lockString string,
-	lockTable string,
-	awsRegion string,
-	maxRetries int,
-	sleepBetweenRetries time.Duration,
-) error {
+func acquireLockWithRetries(options *Options, client *dynamodb.DynamoDB) error {
 
 	return retry.DoWithRetry(
-		log,
-		fmt.Sprintf("Trying to acquire DynamoDB lock %s at table %s", lockString, lockTable),
-		maxRetries,
-		sleepBetweenRetries,
+		options.Logger,
+		fmt.Sprintf("Trying to acquire DynamoDB lock %s at table %s", options.LockString, options.LockTable),
+		options.MaxRetries,
+		options.SleepBetweenRetries,
 		func() error {
-			return AcquireLock(log, lockString, lockTable, awsRegion)
+			return acquireLock(options, client)
 		},
 	)
 }
