@@ -38,7 +38,7 @@ type TimeoutExceeded struct {
 }
 
 func (err TimeoutExceeded) Error() string {
-	return fmt.Sprintf("Timeout trying to acquire lock %s in table %s (timeout was %s)", err.LockString, err.LockTable, err.Timeout)
+	return fmt.Sprintf("Timeout trying to acquire lock %s in table %s (timeout was %s)\n", err.LockString, err.LockTable, err.Timeout)
 }
 
 type TableNotActiveError struct {
@@ -46,7 +46,7 @@ type TableNotActiveError struct {
 }
 
 func (err TableNotActiveError) Error() string {
-	return fmt.Sprintf("Table %s is not active", err.LockTable)
+	return fmt.Sprintf("Table %s is not active\n", err.LockTable)
 }
 
 // We assume that the DynamoDB table will be created prior to using this functionality.
@@ -137,10 +137,9 @@ func acquireLock(options *Options, client *dynamodb.DynamoDB) error {
 // AcquireLockWithRetries will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
 func acquireLockWithRetries(options *Options, client *dynamodb.DynamoDB) error {
-
 	return retry.DoWithRetry(
 		options.Logger,
-		fmt.Sprintf("Trying to acquire DynamoDB lock %s at table %s", options.LockString, options.LockTable),
+		fmt.Sprintf("Trying to acquire DynamoDB lock %s at table %s\n", options.LockString, options.LockTable),
 		options.MaxRetries,
 		options.SleepBetweenRetries,
 		func() error {
@@ -149,41 +148,70 @@ func acquireLockWithRetries(options *Options, client *dynamodb.DynamoDB) error {
 	)
 }
 
+func ReleaseLock(options *Options) error {
+	client, err := NewDynamoDb(options.AwsRegion)
+	if err != nil {
+		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
+		return err
+	}
+
+	tableExists, err := lockTableExistsAndIsActive(options.LockTable, client)
+	if err != nil {
+		options.Logger.Errorf("Error checking if DynamoDB table %s exists and is active\n", options.LockTable)
+		return err
+	}
+
+	if tableExists != true {
+		options.Logger.Errorf("DynamoDB table %s does not exist\n", options.LockTable)
+		return err
+	}
+
+	return retry.DoWithRetry(
+		options.Logger,
+		fmt.Sprintf("Trying to acquire DynamoDB lock %s at table %s\n", options.LockString, options.LockTable),
+		options.MaxRetries,
+		options.SleepBetweenRetries,
+		func() error {
+			return releaseLock(options, client)
+		},
+	)
+}
+
 // ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
 // configured region.
-func ReleaseLock(log *logrus.Logger, lockString string, lockTable string, awsRegion string) error {
-	log.Infof(
+func releaseLock(options *Options, client *dynamodb.DynamoDB) error {
+	options.Logger.Infof(
 		"Attempting to release lock %s in table %s in region %s\n",
-		lockString,
-		lockTable,
-		awsRegion,
+		options.LockString,
+		options.LockTable,
+		options.AwsRegion,
 	)
 
-	dynamodbSvc, err := NewDynamoDb(awsRegion)
+	dynamodbSvc, err := NewDynamoDb(options.AwsRegion)
 	if err != nil {
-		log.Errorf("Error authenticating to AWS: %s\n", err)
+		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
 		return err
 	}
 
 	params := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
-			"LockID": {S: aws.String(lockString)},
+			"LockID": {S: aws.String(options.LockString)},
 		},
-		TableName: aws.String(lockTable),
+		TableName: aws.String(options.LockTable),
 	}
 	_, err = dynamodbSvc.DeleteItem(params)
 
 	if err != nil {
-		log.Errorf(
+		options.Logger.Errorf(
 			"Error releasing lock %s in table %s in region %s: %s\n",
-			lockString,
-			lockTable,
-			awsRegion,
+			options.LockString,
+			options.LockTable,
+			options.AwsRegion,
 			err,
 		)
 		return errors.WithStackTrace(err)
 	}
-	log.Infof("Released lock\n")
+	options.Logger.Infof("Released lock\n")
 	return nil
 }
 
@@ -205,7 +233,7 @@ func createLockTableIfNecessary(options *Options, client *dynamodb.DynamoDB) err
 // Create a lock table in DynamoDB and wait until it is in "active" state. If the table already exists, merely wait
 // until it is in "active" state.
 func createLockTable(options *Options, client *dynamodb.DynamoDB) error {
-	options.Logger.Infof("Creating table %s in DynamoDB", options.LockTable)
+	options.Logger.Infof("Creating table %s in DynamoDB...\n", options.LockTable)
 
 	attributeDefinitions := []*dynamodb.AttributeDefinition{
 		{AttributeName: aws.String(attributeLockId), AttributeType: aws.String(dynamodb.ScalarAttributeTypeS)},
@@ -224,7 +252,7 @@ func createLockTable(options *Options, client *dynamodb.DynamoDB) error {
 
 	if err != nil {
 		if isTableAlreadyBeingCreatedOrUpdatedError(err) {
-			options.Logger.Infof("Looks like someone created table %s at the same time. Will wait for it to be in active state.", options.LockTable)
+			options.Logger.Infof("Looks like someone created table %s at the same time. Will wait for it to be in active state.\n", options.LockTable)
 		} else {
 			return errors.WithStackTrace(err)
 		}
@@ -243,7 +271,7 @@ func isTableAlreadyBeingCreatedOrUpdatedError(err error) bool {
 // Wait for the given DynamoDB table to be in the "active" state. If it's not in "active" state, sleep for the
 // specified amount of time, and try again, up to a maximum of maxRetries retries.
 func waitForTableToBeActive(options *Options, client *dynamodb.DynamoDB) error {
-	return retry.DoWithRetry(options.Logger, fmt.Sprintf("Waiting for Table %s to be active", options.LockTable), maxRetriesWaitingForTableToBeActive, sleepBetweenTableStatusChecks,
+	return retry.DoWithRetry(options.Logger, fmt.Sprintf("Waiting for Table %s to be active...\n", options.LockTable), maxRetriesWaitingForTableToBeActive, sleepBetweenTableStatusChecks,
 		func() error {
 			isReady, err := lockTableExistsAndIsActive(options.LockTable, client)
 			if err != nil {
@@ -251,7 +279,7 @@ func waitForTableToBeActive(options *Options, client *dynamodb.DynamoDB) error {
 			}
 
 			if isReady {
-				options.Logger.Infof("Success! Table %s is now in active state.", options.LockTable)
+				options.Logger.Infof("Success! Table %s is now in active state.\n", options.LockTable)
 				return nil
 			}
 
