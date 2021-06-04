@@ -13,6 +13,10 @@ import (
 func TestAcquireLockWithRetries(t *testing.T) {
 	t.Parallel()
 
+	options *Options {
+
+	}
+
 	lockString := "guardduty-blocking-acquire-lock-test"
 	maxRetries := 2
 	lockTable := "test-dynamo-lock-eu-jam"
@@ -25,16 +29,15 @@ func TestAcquireLockWithRetries(t *testing.T) {
 	defer ReleaseLock(log, lockString, lockTable, awsRegion)
 
 	log.Infof("Acquiring first lock")
-	err := AcquireLockWithRetries(log, lockString, lockTable, awsRegion, maxRetries, sleepBetweenRetries)
+	err := AcquireLock(options)
 	assert.NoError(t, err)
 
 	log.Infof("Acquiring second lock")
-	err = AcquireLockWithRetries(log, lockString, lockTable, awsRegion, maxRetries, sleepBetweenRetries)
+	err = AcquireLock(options)
 
 	if err == nil {
 		assert.Fail(t, "Acquiring of second lock succeeded, but it was expected to fail.")
 	}
-
 }
 
 func assertLockReleased(t *testing.T, lockString string, lockTable string, awsRegion string) {
