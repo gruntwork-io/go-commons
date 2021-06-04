@@ -2,6 +2,7 @@ package lock
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/gruntwork-io/go-commons/retry"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -9,17 +10,44 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/gruntwork-io/gruntwork-cli/errors"
+	"github.com/gruntwork-io/go-commons/errors"
 )
 
-type LockTimeoutExceeded struct {
+// Terraform requires the DynamoDB table to have a primary key with this name
+const attributeLockId = "LockID"
+
+// Default is to retry for up to 5 minutes
+const maxRetriesWaitingForTableToBeActive = 30
+const sleepBetweenTableStatusChecks = 10 * time.Second
+
+const dynamoDbPayPerRequestBillingMode = "PAY_PER_REQUEST"
+
+type Options struct {
+	Logger *logrus.Logger
+	LockString string
+	LockTable string
+	AwsRegion string
+	MaxRetries int
+	SleepBetweenRetries time.Duration
+	CreateTableIfMissing bool
+}
+
+type TimeoutExceeded struct {
 	LockTable  string
 	LockString string
 	Timeout    time.Duration
 }
 
-func (err LockTimeoutExceeded) Error() string {
+func (err TimeoutExceeded) Error() string {
 	return fmt.Sprintf("Timeout trying to acquire lock %s in table %s (timeout was %s)", err.LockString, err.LockTable, err.Timeout)
+}
+
+type TableNotActiveError struct {
+	LockTable string
+}
+
+func (err TableNotActiveError) Error() string {
+	return fmt.Sprintf("Table %s is not active", err.LockTable)
 }
 
 // We assume that the DynamoDB table will be created prior to using this functionality.
@@ -42,7 +70,6 @@ func NewAuthenticatedSession(awsRegion string) (*session.Session, error) {
 	return sess, nil
 }
 
-// We assume that the DynamoDB table will be created prior to using the locking mechanism
 // NewDynamoDb returns an authenticated client object for accessing DynamoDb
 func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
 	sess, err := NewAuthenticatedSession(awsRegion)
@@ -53,9 +80,27 @@ func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
 	return dynamodbSvc, nil
 }
 
+// AcquireLock will attempt to acquire a lock in DynamoDB table and will take the configuration options into account
+func AcquireLock(options *Options) error {
+	client, err := NewDynamoDb(options.AwsRegion)
+	if err != nil {
+		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
+		return err
+	}
+
+	if options.CreateTableIfMissing == true {
+		err := createLockTableIfNecessary(options, client)
+		if err != nil {
+			return errors.WithStackTrace(err)
+		}
+	}
+
+	return acquireLockWithRetries(options.Logger, options.LockString, options.LockTable, options.AwsRegion, options.MaxRetries, options.SleepBetweenRetries)
+}
+
 // AcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
 // configured region.
-func AcquireLock(log *logrus.Logger, lockString string, lockTable string, awsRegion string) error {
+func acquireLock(log *logrus.Logger, lockString string, lockTable string, awsRegion string) error {
 	log.Infof("Attempting to acquire lock %s in table %s in region %s\n",
 		lockString,
 		lockTable,
@@ -92,7 +137,7 @@ func AcquireLock(log *logrus.Logger, lockString string, lockTable string, awsReg
 
 // AcquireLockWithRetries will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
-func AcquireLockWithRetries(
+func acquireLockWithRetries(
 	log *logrus.Logger,
 	lockString string,
 	lockTable string,
@@ -148,4 +193,91 @@ func ReleaseLock(log *logrus.Logger, lockString string, lockTable string, awsReg
 	}
 	log.Infof("Released lock\n")
 	return nil
+}
+
+// Create the lock table in DynamoDB if it doesn't already exist
+func createLockTableIfNecessary(options *Options, client *dynamodb.DynamoDB) error {
+	tableExists, err := lockTableExistsAndIsActive(options.LockTable, client)
+	if err != nil {
+		return err
+	}
+
+	if !tableExists {
+		options.Logger.Infof("Lock table %s does not exist in DynamoDB. Will need to create it just this first time.", options.LockTable)
+		return createLockTable(options, client)
+	}
+
+	return nil
+}
+
+// Create a lock table in DynamoDB and wait until it is in "active" state. If the table already exists, merely wait
+// until it is in "active" state.
+func createLockTable(options *Options, client *dynamodb.DynamoDB) error {
+	options.Logger.Infof("Creating table %s in DynamoDB", options.LockTable)
+
+	attributeDefinitions := []*dynamodb.AttributeDefinition{
+		{AttributeName: aws.String(attributeLockId), AttributeType: aws.String(dynamodb.ScalarAttributeTypeS)},
+	}
+
+	keySchema := []*dynamodb.KeySchemaElement{
+		{AttributeName: aws.String(attributeLockId), KeyType: aws.String(dynamodb.KeyTypeHash)},
+	}
+
+	_, err := client.CreateTable(&dynamodb.CreateTableInput{
+		TableName:            aws.String(options.LockTable),
+		BillingMode:          aws.String(dynamoDbPayPerRequestBillingMode),
+		AttributeDefinitions: attributeDefinitions,
+		KeySchema:            keySchema,
+	})
+
+	if err != nil {
+		if isTableAlreadyBeingCreatedOrUpdatedError(err) {
+			options.Logger.Infof("Looks like someone created table %s at the same time. Will wait for it to be in active state.", options.LockTable)
+		} else {
+			return errors.WithStackTrace(err)
+		}
+	}
+
+	return waitForTableToBeActive(options, client)
+}
+
+// Return true if the given error is the error message returned by AWS when the resource already exists and is being
+// updated by someone else
+func isTableAlreadyBeingCreatedOrUpdatedError(err error) bool {
+	awsErr, isAwsErr := err.(awserr.Error)
+	return isAwsErr && awsErr.Code() == "ResourceInUseException"
+}
+
+// Wait for the given DynamoDB table to be in the "active" state. If it's not in "active" state, sleep for the
+// specified amount of time, and try again, up to a maximum of maxRetries retries.
+func waitForTableToBeActive(options *Options, client *dynamodb.DynamoDB) error {
+	return retry.DoWithRetry(options.Logger, fmt.Sprintf("Waiting for Table %s to be active", options.LockTable), maxRetriesWaitingForTableToBeActive, sleepBetweenTableStatusChecks,
+		func() error {
+			isReady, err := lockTableExistsAndIsActive(options.LockTable, client)
+			if err != nil {
+				return err
+			}
+
+			if isReady {
+				options.Logger.Infof("Success! Table %s is now in active state.", options.LockTable)
+				return nil
+			}
+
+			return TableNotActiveError{options.LockTable}
+		},
+	)
+}
+
+// Return true if the lock table exists in DynamoDB and is in "active" state
+func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bool, error) {
+	output, err := client.DescribeTable(&dynamodb.DescribeTableInput{TableName: aws.String(tableName)})
+	if err != nil {
+		if awsErr, isAwsErr := err.(awserr.Error); isAwsErr && awsErr.Code() == "ResourceNotFoundException" {
+			return false, nil
+		} else {
+			return false, errors.WithStackTrace(err)
+		}
+	}
+
+	return *output.Table.TableStatus == dynamodb.TableStatusActive, nil
 }
