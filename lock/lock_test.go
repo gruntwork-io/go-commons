@@ -3,6 +3,7 @@ package lock
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ func TestAcquireLockWithRetries(t *testing.T) {
 
 	options.Logger.Infof("Acquiring first lock")
 	err := AcquireLock(&options)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	options.Logger.Infof("Acquiring second lock")
 	err = AcquireLock(&options)
@@ -50,7 +51,7 @@ func assertLockReleased(t *testing.T, options *Options) {
 	}
 
 	item, err := client.GetItem(getItemParams)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Empty(t, item.Item)
 }
