@@ -96,14 +96,6 @@ func BlockingAcquireLock(
 	maxRetries int,
 	sleepBetweenRetries time.Duration,
 	) error {
-	log.Infof(
-		"Attempting to acquire lock %s in table %s in region %s, retrying on failure for up to %d times %s",
-		lockString,
-		lockTable,
-		awsRegion,
-		maxRetries,
-		sleepBetweenRetries,
-	)
 
 	return retry.DoWithRetry(
 		log,
