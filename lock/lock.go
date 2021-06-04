@@ -22,11 +22,15 @@ func (err LockTimeoutExceeded) Error() string {
 	return fmt.Sprintf("Timeout trying to acquire lock %s in table %s (timeout was %s)", err.LockString, err.LockTable, err.Timeout)
 }
 
-
-// We assume that the DynamoDB table will be created prior to using this functionality. 
+// We assume that the DynamoDB table will be created prior to using this functionality.
 // NewAuthenticatedSession gets an AWS Session, checking that the user has credentials properly configured in their environment.
 func NewAuthenticatedSession(awsRegion string) (*session.Session, error) {
-	sess, err := session.NewSession(aws.NewConfig().WithRegion(awsRegion))
+	sessionOptions := session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+		Config:            *aws.NewConfig().WithRegion(awsRegion),
+	}
+	sess, err := session.NewSessionWithOptions(sessionOptions)
+
 	if err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
@@ -95,7 +99,7 @@ func BlockingAcquireLock(
 	awsRegion string,
 	maxRetries int,
 	sleepBetweenRetries time.Duration,
-	) error {
+) error {
 
 	return retry.DoWithRetry(
 		log,
@@ -105,7 +109,7 @@ func BlockingAcquireLock(
 		func() error {
 			return AcquireLock(log, lockString, lockTable, awsRegion)
 		},
-		)
+	)
 }
 
 // ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
