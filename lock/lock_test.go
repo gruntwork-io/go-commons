@@ -18,7 +18,7 @@ func TestAcquireLockWithRetries(t *testing.T) {
 	var options = Options {
 		logging.GetLogger("test"),
 		"test-dynamodb-lock-string-" + random.UniqueId(),
-		"test-dynamodb-lock-table-" + random.UniqueId(),
+		"test-dynamodb-lock-table",
 		"eu-central-1",
 		2,
 		1 * time.Second,
@@ -36,7 +36,7 @@ func TestAcquireLockWithRetries(t *testing.T) {
 	err = AcquireLock(&options)
 
 	if err == nil {
-		assert.Fail(t, "Acquiring of second lock succeeded, but it was expected to fail.")
+		require.Error(t, err, "Acquiring of second lock succeeded, but it was expected to fail.")
 	}
 }
 
