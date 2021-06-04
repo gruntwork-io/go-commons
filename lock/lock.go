@@ -301,3 +301,26 @@ func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bo
 
 	return *output.Table.TableStatus == dynamodb.TableStatusActive, nil
 }
+
+func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
+	client, err := NewDynamoDb(options.AwsRegion)
+	if err != nil {
+		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
+		return nil, err
+	}
+
+	getItemParams := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			attributeLockId: {S: aws.String(options.LockString)},
+		},
+		TableName: aws.String(options.LockTable),
+	}
+
+	item, err := client.GetItem(getItemParams)
+	if err != nil {
+		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
+		return nil, err
+	}
+
+	return item, nil
+}

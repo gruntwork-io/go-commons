@@ -1,8 +1,6 @@
 package lock
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -12,46 +10,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var options = Options {
+	logging.GetLogger("test"),
+	"test-dynamodb-lock-string-" + random.UniqueId(),
+	"test-dynamodb-lock-table",
+	"eu-central-1",
+	2,
+	1 * time.Second,
+	true,
+}
+
 func TestAcquireLockWithRetries(t *testing.T) {
 	t.Parallel()
-
-	var options = Options {
-		logging.GetLogger("test"),
-		"test-dynamodb-lock-string-" + random.UniqueId(),
-		"test-dynamodb-lock-table",
-		"eu-central-1",
-		2,
-		1 * time.Second,
-		true,
-	}
 
 	defer assertLockReleased(t, &options)
 	defer ReleaseLock(&options)
 
-	options.Logger.Infof("Acquiring first lock")
+	options.Logger.Infof("Acquiring first lock...\n")
 	err := AcquireLock(&options)
 	require.NoError(t, err)
 
-	options.Logger.Infof("Acquiring second lock")
+	options.Logger.Infof("Acquiring second lock...\n")
 	err = AcquireLock(&options)
 
 	if err == nil {
-		require.Error(t, err, "Acquiring of second lock succeeded, but it was expected to fail.")
+		require.Error(t, err, "Acquiring of second lock succeeded, but it was expected to fail.\n")
 	}
 }
 
 func assertLockReleased(t *testing.T, options *Options) {
-	client, dbErr := NewDynamoDb(options.AwsRegion)
-	assert.NoError(t, dbErr)
-
-	getItemParams := &dynamodb.GetItemInput{
-		Key: map[string]*dynamodb.AttributeValue{
-			"LockID": {S: aws.String(options.LockString)},
-		},
-		TableName: aws.String(options.LockTable),
-	}
-
-	item, err := client.GetItem(getItemParams)
+	item, err := GetLockStatus(options)
 	require.NoError(t, err)
 
 	assert.Empty(t, item.Item)
