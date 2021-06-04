@@ -49,7 +49,6 @@ func (err TableNotActiveError) Error() string {
 	return fmt.Sprintf("Table %s is not active\n", err.LockTable)
 }
 
-// We assume that the DynamoDB table will be created prior to using this functionality.
 // NewAuthenticatedSession gets an AWS Session, checking that the user has credentials properly configured in their environment.
 func NewAuthenticatedSession(awsRegion string) (*session.Session, error) {
 	sessionOptions := session.Options{
@@ -80,6 +79,11 @@ func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
 }
 
 // AcquireLock will attempt to acquire a lock in DynamoDB table and will take the configuration options into account
+// We are using DynamoDB to crate a table to help us track the lock status of different resources.
+// The acquiring of a lock attempts to create a table if the configuration property `CreateTableIfMissing` is set to true,
+// otherwise it assumes that such a table already exists. The intention is that we have 1 table per resource in a single region.
+// This would allow the locking mechanism to flexibly decide if a resource is locked or not. For test cases where the AWS resource
+// is multi-region, or global, the configuration of which regions to use should reflect that.
 func AcquireLock(options *Options) error {
 	client, err := NewDynamoDb(options.AwsRegion)
 	if err != nil {
@@ -97,7 +101,7 @@ func AcquireLock(options *Options) error {
 	return acquireLockWithRetries(options, client)
 }
 
-// AcquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
+// acquireLock will attempt to acquire the lock defined by the provided lock string in the configured lock table for the
 // configured region.
 func acquireLock(options *Options, client *dynamodb.DynamoDB) error {
 	options.Logger.Infof("Attempting to acquire lock %s in table %s in region %s\n",
@@ -148,6 +152,8 @@ func acquireLockWithRetries(options *Options, client *dynamodb.DynamoDB) error {
 	)
 }
 
+// ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
+// configured region.
 func ReleaseLock(options *Options) error {
 	client, err := NewDynamoDb(options.AwsRegion)
 	if err != nil {
@@ -177,8 +183,7 @@ func ReleaseLock(options *Options) error {
 	)
 }
 
-// ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
-// configured region.
+// releaseLock will try to delete the DynamoDB item that serves as the lock object
 func releaseLock(options *Options, client *dynamodb.DynamoDB) error {
 	options.Logger.Infof(
 		"Attempting to release lock %s in table %s in region %s\n",
@@ -215,7 +220,7 @@ func releaseLock(options *Options, client *dynamodb.DynamoDB) error {
 	return nil
 }
 
-// Create the lock table in DynamoDB if it doesn't already exist
+// create the lock table in DynamoDB if it doesn't already exist
 func createLockTableIfNecessary(options *Options, client *dynamodb.DynamoDB) error {
 	tableExists, err := lockTableExistsAndIsActive(options.LockTable, client)
 	if err != nil {
@@ -230,7 +235,7 @@ func createLockTableIfNecessary(options *Options, client *dynamodb.DynamoDB) err
 	return nil
 }
 
-// Create a lock table in DynamoDB and wait until it is in "active" state. If the table already exists, merely wait
+// create a lock table in DynamoDB and wait until it is in "active" state. If the table already exists, merely wait
 // until it is in "active" state.
 func createLockTable(options *Options, client *dynamodb.DynamoDB) error {
 	options.Logger.Infof("Creating table %s in DynamoDB...\n", options.LockTable)
@@ -302,6 +307,8 @@ func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bo
 	return *output.Table.TableStatus == dynamodb.TableStatusActive, nil
 }
 
+// GetLockStatus attempts to acquire the lock and check if the expected item is there. If it is - the status is `locked`,
+// if the item with the `LockString` is not there, then the status is `not locked`.
 func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
 	client, err := NewDynamoDb(options.AwsRegion)
 	if err != nil {
