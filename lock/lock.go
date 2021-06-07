@@ -295,7 +295,7 @@ func waitForTableToBeActive(options *Options, client *dynamodb.DynamoDB) error {
 	)
 }
 
-// Return true if the lock table exists in DynamoDB and is in "active" state
+// lockTableExistsAndIsActive will return true if the lock table exists in DynamoDB and is in "active" state
 func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bool, error) {
 	output, err := client.DescribeTable(&dynamodb.DescribeTableInput{TableName: aws.String(tableName)})
 	if err != nil {
