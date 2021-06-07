@@ -222,7 +222,7 @@ func releaseLock(options *Options, client *dynamodb.DynamoDB) error {
 	return nil
 }
 
-// create the lock table in DynamoDB if it doesn't already exist
+// createLockTableIfNecessary will create the lock table in DynamoDB if it doesn't already exist
 func createLockTableIfNecessary(options *Options, client *dynamodb.DynamoDB) error {
 	tableExists, err := lockTableExistsAndIsActive(options.LockTable, client)
 	if err != nil {
