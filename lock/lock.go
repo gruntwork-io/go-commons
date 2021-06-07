@@ -12,14 +12,16 @@ import (
 	"time"
 )
 
-// Terraform requires the DynamoDB table to have a primary key with this name
-const attributeLockId = "LockID"
+const (
+	// Terraform requires the DynamoDB table to have a primary key with this name
+	attributeLockId = "LockID"
 
-// Default is to retry for up to 5 minutes
-const maxRetriesWaitingForTableToBeActive = 30
-const sleepBetweenTableStatusChecks = 10 * time.Second
+	// Default is to retry for up to 5 minutes
+	maxRetriesWaitingForTableToBeActive = 30
+	sleepBetweenTableStatusChecks       = 10 * time.Second
 
-const dynamoDbPayPerRequestBillingMode = "PAY_PER_REQUEST"
+	dynamoDbPayPerRequestBillingMode = "PAY_PER_REQUEST"
+)
 
 type Options struct {
 	Logger *logrus.Logger
