@@ -140,7 +140,7 @@ func acquireLock(options *Options, client *dynamodb.DynamoDB) error {
 	return nil
 }
 
-// AcquireLockWithRetries will attempt to acquire the lock defined by the provided lock string in the configured lock table
+// acquireLockWithRetries will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
 func acquireLockWithRetries(options *Options, client *dynamodb.DynamoDB) error {
 	return retry.DoWithRetry(
