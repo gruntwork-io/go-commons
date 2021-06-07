@@ -12,15 +12,17 @@ import (
 	"time"
 )
 
-// Terraform requires the DynamoDB table to have a primary key with this name
-const attributeLockId = "LockID"
+const (
+	// Terraform requires the DynamoDB table to have a primary key with this name
+	attributeLockId = "LockID"
 
-// This is used as the value for maximum retries when creating the DynamoDB table
-// Default is to retry for up to 5 minutes
-const maxRetriesWaitingForTableToBeActive = 30
-const sleepBetweenTableStatusChecks = 10 * time.Second
+	// This is used as the value for maximum retries when creating the DynamoDB table
+	// Default is to retry for up to 5 minutes
+	const maxRetriesWaitingForTableToBeActive = 30
+	const sleepBetweenTableStatusChecks = 10 * time.Second
 
-const dynamoDbPayPerRequestBillingMode = "PAY_PER_REQUEST"
+	dynamoDbPayPerRequestBillingMode = "PAY_PER_REQUEST"
+)
 
 type Options struct {
 	// The AWS region for which you wish to create the distributed lock for. For example, if set  to `us-east-1`,
@@ -89,8 +91,8 @@ func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
 	return dynamodbSvc, nil
 }
 
-// AcquireLock will attempt to acquire a lock in DynamoDB table and will take the configuration options into account
-// We are using DynamoDB to crate a table to help us track the lock status of different resources.
+// AcquireLock will attempt to acquire a lock in DynamoDB table while taking the configuration options into account.
+// We are using DynamoDB to create a table to help us track the lock status of different resources.
 // The acquiring of a lock attempts to create a table if the configuration property `CreateTableIfMissing` is set to true,
 // otherwise it assumes that such a table already exists. The intention is that we have 1 table per resource in a single region.
 // This would allow the locking mechanism to flexibly decide if a resource is locked or not. For test cases where the AWS resource
@@ -149,7 +151,7 @@ func acquireLock(options *Options, client *dynamodb.DynamoDB) error {
 	return nil
 }
 
-// AcquireLockWithRetries will attempt to acquire the lock defined by the provided lock string in the configured lock table
+// acquireLockWithRetries will attempt to acquire the lock defined by the provided lock string in the configured lock table
 // for the configured region. This will retry on failure, until reaching timeout.
 func acquireLockWithRetries(options *Options, client *dynamodb.DynamoDB) error {
 	return retry.DoWithRetry(
@@ -185,7 +187,7 @@ func ReleaseLock(options *Options) error {
 
 	return retry.DoWithRetry(
 		options.Logger,
-		fmt.Sprintf("Trying to acquire DynamoDB lock %s at table %s\n", options.LockString, options.LockTable),
+		fmt.Sprintf("Trying to release DynamoDB lock %s at table %s\n", options.LockString, options.LockTable),
 		options.MaxRetries,
 		options.SleepBetweenRetries,
 		func() error {
@@ -231,7 +233,7 @@ func releaseLock(options *Options, client *dynamodb.DynamoDB) error {
 	return nil
 }
 
-// create the lock table in DynamoDB if it doesn't already exist
+// createLockTableIfNecessary will create the lock table in DynamoDB if it doesn't already exist
 func createLockTableIfNecessary(options *Options, client *dynamodb.DynamoDB) error {
 	tableExists, err := lockTableExistsAndIsActive(options.LockTable, client)
 	if err != nil {
@@ -304,7 +306,7 @@ func waitForTableToBeActive(options *Options, client *dynamodb.DynamoDB) error {
 	)
 }
 
-// Return true if the lock table exists in DynamoDB and is in "active" state
+// lockTableExistsAndIsActive will return true if the lock table exists in DynamoDB and is in "active" state
 func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bool, error) {
 	output, err := client.DescribeTable(&dynamodb.DescribeTableInput{TableName: aws.String(tableName)})
 	if err != nil {
