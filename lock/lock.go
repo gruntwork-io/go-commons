@@ -81,7 +81,7 @@ func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
 }
 
 // AcquireLock will attempt to acquire a lock in DynamoDB table and will take the configuration options into account
-// We are using DynamoDB to crate a table to help us track the lock status of different resources.
+// We are using DynamoDB to create a table to help us track the lock status of different resources.
 // The acquiring of a lock attempts to create a table if the configuration property `CreateTableIfMissing` is set to true,
 // otherwise it assumes that such a table already exists. The intention is that we have 1 table per resource in a single region.
 // This would allow the locking mechanism to flexibly decide if a resource is locked or not. For test cases where the AWS resource
