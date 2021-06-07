@@ -10,18 +10,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var options = Options {
-	logging.GetLogger("test"),
-	"test-dynamodb-lock-string-" + random.UniqueId(),
-	"test-dynamodb-lock-table",
-	"eu-central-1",
-	2,
-	1 * time.Second,
-	true,
-}
-
 func TestAcquireLockWithRetries(t *testing.T) {
 	t.Parallel()
+
+	var options = Options {
+		AwsRegion: "eu-central-1",
+		LockTable: "test-dynamodb-lock-table-" + random.UniqueId(),
+		LockString: "test-dynamodb-lock-string-" + random.UniqueId(),
+		MaxRetries: 2,
+		SleepBetweenRetries: 1 * time.Second,
+		CreateTableIfMissing: true,
+		Logger: logging.GetLogger("test"),
+	}
 
 	defer assertLockReleased(t, &options)
 	defer ReleaseLock(&options)
