@@ -15,6 +15,7 @@ import (
 // Terraform requires the DynamoDB table to have a primary key with this name
 const attributeLockId = "LockID"
 
+// This is used as the value for maximum retries when creating the DynamoDB table
 // Default is to retry for up to 5 minutes
 const maxRetriesWaitingForTableToBeActive = 30
 const sleepBetweenTableStatusChecks = 10 * time.Second
@@ -22,13 +23,23 @@ const sleepBetweenTableStatusChecks = 10 * time.Second
 const dynamoDbPayPerRequestBillingMode = "PAY_PER_REQUEST"
 
 type Options struct {
-	Logger *logrus.Logger
-	LockString string
-	LockTable string
+	// The AWS region for which you wish to create the distributed lock for. For example, if set  to `us-east-1`,
+	// the lock will create a DynamoDB table and record for the AWS resource (e.g. Security Hub) in the same region to mark it as locked.
+	// This means if the same AWS resource (Security Hub) is then reference from a different part of the system, also using this lock mechanism,
+	// the resource will appear as it's locked already and therefore not available to modify.
 	AwsRegion string
+	// The name of the DynamoDB table that will store the lock status for the resource in the given region.
+	LockTable string
+	// The name of the DynamoDB Item value that will store the lock status for the resource in the given region.
+	LockString string
+	// The value for how many times should the AcquireLock retry to acquire the lock
 	MaxRetries int
+	// The value for how long should the AcquireLock sleep for between retries times should the AcquireLock retry to acquire the lock
 	SleepBetweenRetries time.Duration
+	// Create the DynamoDB table if one for the lock status of the AWS resource doesn't exist already in the region
 	CreateTableIfMissing bool
+	// The logger to use for the lock
+	Logger *logrus.Logger
 }
 
 type TimeoutExceeded struct {
