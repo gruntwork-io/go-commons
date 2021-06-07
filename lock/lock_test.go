@@ -33,9 +33,7 @@ func TestAcquireLockWithRetries(t *testing.T) {
 	options.Logger.Infof("Acquiring second lock...\n")
 	err = AcquireLock(&options)
 
-	if err == nil {
-		require.Error(t, err, "Acquiring of second lock succeeded, but it was expected to fail.\n")
-	}
+	assert.Error(t, err, "Acquiring of second lock succeeded, but it was expected to fail")
 }
 
 func assertLockReleased(t *testing.T, options *Options) {
