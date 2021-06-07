@@ -176,7 +176,7 @@ func ReleaseLock(options *Options) error {
 
 	return retry.DoWithRetry(
 		options.Logger,
-		fmt.Sprintf("Trying to acquire DynamoDB lock %s at table %s\n", options.LockString, options.LockTable),
+		fmt.Sprintf("Trying to release DynamoDB lock %s at table %s\n", options.LockString, options.LockTable),
 		options.MaxRetries,
 		options.SleepBetweenRetries,
 		func() error {
