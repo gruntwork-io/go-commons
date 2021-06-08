@@ -1,5 +1,7 @@
 [![Maintained by Gruntwork.io](https://img.shields.io/badge/maintained%20by-gruntwork.io-%235849a6.svg)](https://gruntwork.io/?ref=repo_go-commons)
-[![GoDoc](https://godoc.org/github.com/gruntwork-io/go-commons?status.svg)](https://godoc.org/github.com/gruntwork-io/go-commons)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gruntwork-io/go-commons)](https://goreportcard.com/report/github.com/gruntwork-io/go-commons)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/mod/github.com/gruntwork-io/go-commons?tab=overview)
+![go.mod version](https://img.shields.io/github/go-mod/go-version/gruntwork-io/go-commons)
 
 # Gruntwork Go Commons
 
