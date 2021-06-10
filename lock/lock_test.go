@@ -23,6 +23,7 @@ func TestAcquireLockWithRetries(t *testing.T) {
 		Logger: logging.GetLogger("test"),
 	}
 
+	defer cleanupDynamoDbTestTable(t, &options)
 	defer assertLockReleased(t, &options)
 	defer ReleaseLock(&options)
 
@@ -41,4 +42,9 @@ func assertLockReleased(t *testing.T, options *Options) {
 	require.NoError(t, err)
 
 	assert.Empty(t, item.Item)
+}
+
+func cleanupDynamoDbTestTable(t *testing.T, options *Options) {
+	_, err := DeleteDynamoDbTable(options)
+	assert.Nil(t, err, "Unexpected error: %v", err)
 }
