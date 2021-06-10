@@ -241,7 +241,7 @@ func createLockTableIfNecessary(options *Options, client *dynamodb.DynamoDB) err
 	return nil
 }
 
-// create a lock table in DynamoDB and wait until it is in "active" state. If the table already exists, merely wait
+// createLockTable will attempt to create a lock table in DynamoDB and wait until it is in "active" state. If the table already exists, merely wait
 // until it is in "active" state.
 func createLockTable(options *Options, client *dynamodb.DynamoDB) error {
 	options.Logger.Infof("Creating table %s in DynamoDB...\n", options.LockTable)
@@ -272,14 +272,14 @@ func createLockTable(options *Options, client *dynamodb.DynamoDB) error {
 	return waitForTableToBeActive(options, client)
 }
 
-// Return true if the given error is the error message returned by AWS when the resource already exists and is being
+// isTableAlreadyBeingCreatedOrUpdatedError will return true if the given error is the error message returned by AWS when the resource already exists and is being
 // updated by someone else
 func isTableAlreadyBeingCreatedOrUpdatedError(err error) bool {
 	awsErr, isAwsErr := err.(awserr.Error)
 	return isAwsErr && awsErr.Code() == "ResourceInUseException"
 }
 
-// Wait for the given DynamoDB table to be in the "active" state. If it's not in "active" state, sleep for the
+// waitForTableToBeActive will wait for the given DynamoDB table to be in the "active" state. If it's not in "active" state, sleep for the
 // specified amount of time, and try again, up to a maximum of maxRetries retries.
 func waitForTableToBeActive(options *Options, client *dynamodb.DynamoDB) error {
 	return retry.DoWithRetry(options.Logger, fmt.Sprintf("Waiting for Table %s to be active...\n", options.LockTable), maxRetriesWaitingForTableToBeActive, sleepBetweenTableStatusChecks,
