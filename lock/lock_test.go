@@ -46,5 +46,5 @@ func assertLockReleased(t *testing.T, options *Options) {
 
 func cleanupDynamoDbTestTable(t *testing.T, options *Options) {
 	_, err := DeleteDynamoDbTable(options)
-	assert.Nil(t, err, "Unexpected error: %v", err)
+	assert.Nil(t, err, "Error deleting DynamoDB table %s: %s", options.LockTable, err)
 }

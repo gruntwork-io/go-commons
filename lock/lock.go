@@ -234,7 +234,7 @@ func createLockTableIfNecessary(options *Options, client *dynamodb.DynamoDB) err
 	}
 
 	if !tableExists {
-		options.Logger.Infof("Lock table %s does not exist in DynamoDB. Will need to create it just this first time.", options.LockTable)
+		options.Logger.Infof("Lock table %s does not exist in DynamoDB. Will need to create it just this first time.\n", options.LockTable)
 		return createLockTable(options, client)
 	}
 
@@ -353,7 +353,7 @@ func DeleteDynamoDbTable(options *Options) (*dynamodb.DeleteTableOutput, error) 
 	})
 
 	if err != nil {
-		options.Logger.Errorf("Error deleting DynamoDB table %s\n", err)
+		options.Logger.Errorf("Error deleting DynamoDB table %s: %s\n", options.LockTable, err)
 		return nil, err
 	}
 
