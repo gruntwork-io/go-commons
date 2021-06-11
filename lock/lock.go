@@ -34,9 +34,9 @@ type Options struct {
 	LockTable string
 	// The name of the DynamoDB Item value that will store the lock status for the resource in the given region.
 	LockString string
-	// The value for how many times should the AcquireLock and ReleaseLock retry to acquire the lock
+	// The value for how many times AcquireLock will retry to acquire the lock
 	MaxRetries int
-	// The value for how long should the AcquireLock and ReleaseLock sleep for between retries times should the AcquireLock retry to acquire the lock
+	// The value for how long AcquireLock will sleep for between retries to get the lock
 	SleepBetweenRetries time.Duration
 	// The logger to use for the lock
 	Logger *logrus.Logger
@@ -294,8 +294,8 @@ func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bo
 	return *output.Table.TableStatus == dynamodb.TableStatusActive, nil
 }
 
-// GetLockStatus attempts to acquire the lock and check if the expected item is there. If it is - the status is `locked`,
-// if the item with the `LockString` is not there, then the status is `not locked`
+// GetLockStatus attempts to acquire the lock and check if the expected item is there
+// If there's the expected Item with the correct `LockString` value - then the status is `locked`, if the item is not there - then the status is `not locked`
 func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
 	client, err := NewDynamoDb(options.AwsRegion)
 	if err != nil {
