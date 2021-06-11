@@ -173,21 +173,7 @@ func ReleaseLock(options *Options) error {
 		return err
 	}
 
-	return releaseLockWithRetries(options, client)
-}
-
-// releaseLockWithRetries will attempt to release the lock defined by the provided lock string in the configured lock table
-// for the configured region. This will retry on failure, until reaching a timeout
-func releaseLockWithRetries(options *Options, client *dynamodb.DynamoDB) error {
-	return retry.DoWithRetry(
-		options.Logger,
-		fmt.Sprintf("Trying to release DynamoDB lock %s in table %s\n", options.LockString, options.LockTable),
-		options.MaxRetries,
-		options.SleepBetweenRetries,
-		func() error {
-			return releaseLock(options, client)
-		},
-	)
+	return releaseLock(options, client)
 }
 
 // releaseLock will try to delete the DynamoDB item that serves as the lock object

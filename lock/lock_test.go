@@ -1,6 +1,7 @@
 package lock
 
 import (
+	"fmt"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -13,13 +14,13 @@ import (
 func TestAcquireLockWithRetries(t *testing.T) {
 	t.Parallel()
 
-	var options = Options {
-		AwsRegion: "us-east-1",
-		LockTable: "test-dynamodb-lock-table",
-		LockString: "test-dynamodb-lock-string-" + random.UniqueId(),
-		MaxRetries: 2,
+	var options = Options{
+		AwsRegion:           "us-east-1",
+		LockTable:           "test-dynamodb-lock-table",
+		LockString:          "test-dynamodb-lock-string-" + random.UniqueId(),
+		MaxRetries:          2,
 		SleepBetweenRetries: 1 * time.Second,
-		Logger: logging.GetLogger("TestAcquireLockWithRetries"),
+		Logger:              logging.GetLogger("TestAcquireLockWithRetries"),
 	}
 
 	defer assertLockReleased(t, &options)
@@ -32,7 +33,12 @@ func TestAcquireLockWithRetries(t *testing.T) {
 	options.Logger.Infof("Acquiring second lock...\n")
 	err = AcquireLock(&options)
 
-	assert.Error(t, err, "Acquiring of second lock succeeded, but it was expected to fail")
+	assert.Error(t, err,
+		fmt.Sprintf("Error acquiring lock %s in table %s in region %s (already locked?): %s\n",
+			options.LockString,
+			options.LockTable,
+			options.AwsRegion,
+			err))
 }
 
 func assertLockReleased(t *testing.T, options *Options) {
