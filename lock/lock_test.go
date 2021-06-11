@@ -14,16 +14,14 @@ func TestAcquireLockWithRetries(t *testing.T) {
 	t.Parallel()
 
 	var options = Options {
-		AwsRegion: "eu-central-1",
-		LockTable: "test-dynamodb-lock-table-" + random.UniqueId(),
+		AwsRegion: "us-east-1",
+		LockTable: "test-dynamodb-lock-table",
 		LockString: "test-dynamodb-lock-string-" + random.UniqueId(),
 		MaxRetries: 2,
 		SleepBetweenRetries: 1 * time.Second,
-		CreateTableIfMissing: true,
-		Logger: logging.GetLogger("test"),
+		Logger: logging.GetLogger("TestAcquireLockWithRetries"),
 	}
 
-	defer cleanupDynamoDbTestTable(t, &options)
 	defer assertLockReleased(t, &options)
 	defer ReleaseLock(&options)
 
@@ -42,9 +40,4 @@ func assertLockReleased(t *testing.T, options *Options) {
 	require.NoError(t, err)
 
 	assert.Empty(t, item.Item)
-}
-
-func cleanupDynamoDbTestTable(t *testing.T, options *Options) {
-	_, err := DeleteDynamoDbTable(options)
-	assert.Nil(t, err, "Error deleting DynamoDB table %s: %s", options.LockTable, err)
 }

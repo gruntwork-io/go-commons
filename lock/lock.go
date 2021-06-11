@@ -38,8 +38,6 @@ type Options struct {
 	MaxRetries int
 	// The value for how long should the AcquireLock and ReleaseLock sleep for between retries times should the AcquireLock retry to acquire the lock
 	SleepBetweenRetries time.Duration
-	// Create the DynamoDB table if one for the lock status of the AWS resource doesn't exist already in the region
-	CreateTableIfMissing bool
 	// The logger to use for the lock
 	Logger *logrus.Logger
 }
@@ -93,8 +91,7 @@ func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
 
 // AcquireLock will attempt to acquire a lock in DynamoDB table while taking the configuration options into account.
 // We are using DynamoDB to create a table to help us track the lock status of different resources.
-// The acquiring of a lock attempts to create a table if the configuration property `CreateTableIfMissing` is set to true,
-// otherwise it assumes that such a table already exists. The intention is that we have 1 table per resource in a single region.
+// The acquiring of a lock attempts to create a table. The intention is that we have 1 table per resource in a single region.
 // This would allow the locking mechanism to flexibly decide if a resource is locked or not. For test cases where the AWS resource
 // is multi-region, or global, the configuration of which regions to use should reflect that.
 func AcquireLock(options *Options) error {
@@ -104,10 +101,8 @@ func AcquireLock(options *Options) error {
 		return err
 	}
 
-	if options.CreateTableIfMissing == true {
-		if err := createLockTableIfNecessary(options, client); err != nil {
-			return errors.WithStackTrace(err)
-		}
+	if err := createLockTableIfNecessary(options, client); err != nil {
+		return errors.WithStackTrace(err)
 	}
 
 	return acquireLockWithRetries(options, client)
@@ -336,26 +331,4 @@ func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
 	}
 
 	return item, nil
-}
-
-// DeleteDynamoDbTable will attempt to delete a lock table in DynamoDB
-func DeleteDynamoDbTable(options *Options) (*dynamodb.DeleteTableOutput, error) {
-	options.Logger.Infof("Deleting table %s in DynamoDB...\n", options.LockTable)
-
-	client, err := NewDynamoDb(options.AwsRegion)
-	if err != nil {
-		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
-		return nil, err
-	}
-
-	output, err := client.DeleteTable(&dynamodb.DeleteTableInput{
-		TableName: aws.String(options.LockTable),
-	})
-
-	if err != nil {
-		options.Logger.Errorf("Error deleting DynamoDB table %s: %s\n", options.LockTable, err)
-		return nil, err
-	}
-
-	return output, nil
 }
