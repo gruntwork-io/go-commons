@@ -260,8 +260,8 @@ func isTableAlreadyBeingCreatedOrUpdatedError(err error) bool {
 	return isAwsErr && awsErr.Code() == "ResourceInUseException"
 }
 
-// waitForTableToBeActive will wait for the given DynamoDB table to be in the "active" state. If it's not in "active" state, sleep for the
-// specified amount of time, and try again, up to a maximum of maxRetries retries
+// waitForTableToBeActive will wait for the given DynamoDB table to be in the "active" state. If it's not in "active" state, this function will sleep for the
+// specified amount of time, and try again, up to a maximum of maxRetries retries. Note this is different from the MaxRetires value for how many times to retry when acquiring the lock.
 func waitForTableToBeActive(options *Options, client *dynamodb.DynamoDB) error {
 	return retry.DoWithRetry(options.Logger, fmt.Sprintf("Waiting for Table %s to be active...\n", options.LockTable), maxRetriesWaitingForTableToBeActive, sleepBetweenTableStatusChecks,
 		func() error {
