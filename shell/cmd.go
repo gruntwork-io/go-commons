@@ -66,6 +66,12 @@ func RunShellCommandAndGetStdoutAndStreamOutput(options *ShellOptions, command s
 	return out.Stdout, err
 }
 
+// Run the specified shell command with the specified arguments. Return its stdout, stderr, and interleaved output as a
+// struct and also stream stdout and stderr to the OS stdout/stderr
+func RunShellCommandAndGetOutputStructAndStreamOutput(options *ShellOptions, command string, args ...string) (Output, error) {
+	return runShellCommand(options, true, command, args...)
+}
+
 // Run the specified shell command with the specified arguments. Return its stdout and stderr as a string and also
 // stream stdout and stderr to the OS stdout/stderr
 func runShellCommand(options *ShellOptions, streamOutput bool, command string, args ...string) (Output, error) {
