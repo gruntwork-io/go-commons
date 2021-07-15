@@ -2,6 +2,7 @@ package shell
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,13 @@ import (
 
 	"github.com/gruntwork-io/go-commons/errors"
 )
+
+// Output represents the command output captured as strings.
+type Output struct {
+	Stdout      string
+	Stderr      string
+	Interleaved string
+}
 
 // Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
 // the currently running app.
@@ -27,74 +35,41 @@ func RunShellCommand(options *ShellOptions, command string, args ...string) erro
 	return errors.WithStackTrace(cmd.Run())
 }
 
-// Run the specified shell command with the specified arguments. Return its stdout and stderr as a string
-func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ...string) (string, error) {
-	logCommand(options, command, args...)
-	cmd := exec.Command(command, args...)
-
-	cmd.Stdin = os.Stdin
-
-	setCommandOptions(options, cmd)
-
-	out, err := cmd.CombinedOutput()
-	return string(out), errors.WithStackTrace(err)
+// Run the specified shell command with the specified arguments. Return its stdout, stderr, and interleaved output as
+// separate strings in a struct.
+func RunShellCommandAndGetOutputStruct(options *ShellOptions, command string, args ...string) (Output, error) {
+	return runShellCommand(options, false, command, args...)
 }
 
-// Run the specified shell command with the specified arguments. Return its stdout and stderr as a string and also
-// stream stdout and stderr to the OS stdout/stderr
+// Run the specified shell command with the specified arguments. Return its stdout and stderr as a string
+func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ...string) (string, error) {
+	out, err := runShellCommand(options, false, command, args...)
+	return out.Interleaved, err
+}
+
+// Run the specified shell command with the specified arguments. Return its interleaved stdout and stderr as a string
+// and also stream stdout and stderr to the OS stdout/stderr
 func RunShellCommandAndGetAndStreamOutput(options *ShellOptions, command string, args ...string) (string, error) {
-	logCommand(options, command, args...)
-	cmd := exec.Command(command, args...)
-
-	setCommandOptions(options, cmd)
-
-	cmd.Stdin = os.Stdin
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return "", errors.WithStackTrace(err)
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return "", errors.WithStackTrace(err)
-	}
-
-	if err := cmd.Start(); err != nil {
-		return "", errors.WithStackTrace(err)
-	}
-
-	output, err := readStdoutAndStderr(
-		stdout,
-		true,
-		stderr,
-		true,
-		options,
-	)
-	if err != nil {
-		return output, err
-	}
-
-	err = cmd.Wait()
-	return output, errors.WithStackTrace(err)
+	out, err := runShellCommand(options, true, command, args...)
+	return out.Interleaved, err
 }
 
 // Run the specified shell command with the specified arguments. Return its stdout as a string
 func RunShellCommandAndGetStdout(options *ShellOptions, command string, args ...string) (string, error) {
-	logCommand(options, command, args...)
-	cmd := exec.Command(command, args...)
-
-	cmd.Stdin = os.Stdin
-
-	setCommandOptions(options, cmd)
-
-	out, err := cmd.Output()
-	return string(out), errors.WithStackTrace(err)
+	out, err := runShellCommand(options, false, command, args...)
+	return out.Stdout, err
 }
 
 // Run the specified shell command with the specified arguments. Return its stdout as a string and also stream stdout
 // and stderr to the OS stdout/stderr
 func RunShellCommandAndGetStdoutAndStreamOutput(options *ShellOptions, command string, args ...string) (string, error) {
+	out, err := runShellCommand(options, true, command, args...)
+	return out.Stdout, err
+}
+
+// Run the specified shell command with the specified arguments. Return its stdout and stderr as a string and also
+// stream stdout and stderr to the OS stdout/stderr
+func runShellCommand(options *ShellOptions, streamOutput bool, command string, args ...string) (Output, error) {
 	logCommand(options, command, args...)
 	cmd := exec.Command(command, args...)
 
@@ -104,24 +79,23 @@ func RunShellCommandAndGetStdoutAndStreamOutput(options *ShellOptions, command s
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return Output{}, errors.WithStackTrace(err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return Output{}, errors.WithStackTrace(err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return "", errors.WithStackTrace(err)
+		return Output{}, errors.WithStackTrace(err)
 	}
 
 	output, err := readStdoutAndStderr(
 		stdout,
-		true,
 		stderr,
-		false,
 		options,
+		streamOutput,
 	)
 	if err != nil {
 		return output, err
@@ -134,28 +108,33 @@ func RunShellCommandAndGetStdoutAndStreamOutput(options *ShellOptions, command s
 // This function captures stdout and stderr while still printing it to the stdout and stderr of this Go program
 func readStdoutAndStderr(
 	stdout io.ReadCloser,
-	includeStdout bool,
 	stderr io.ReadCloser,
-	includeStderr bool,
 	options *ShellOptions,
-) (string, error) {
+	streamOutput bool,
+) (Output, error) {
+	stdoutOutput := []string{}
+	stderrOutput := []string{}
 	allOutput := []string{}
 
 	stdoutScanner := bufio.NewScanner(stdout)
+	stdoutScanner.Split(ScanLinesIncludeRaw)
 	stderrScanner := bufio.NewScanner(stderr)
+	stderrScanner.Split(ScanLinesIncludeRaw)
 
 	for {
 		if stdoutScanner.Scan() {
 			text := stdoutScanner.Text()
-			options.Logger.Println(text)
-			if includeStdout {
-				allOutput = append(allOutput, text)
+			allOutput = append(allOutput, text)
+			stdoutOutput = append(stdoutOutput, text)
+			if streamOutput {
+				options.Logger.Println(text)
 			}
 		} else if stderrScanner.Scan() {
 			text := stderrScanner.Text()
-			options.Logger.Println(text)
-			if includeStderr {
-				allOutput = append(allOutput, text)
+			allOutput = append(allOutput, text)
+			stderrOutput = append(stderrOutput, text)
+			if streamOutput {
+				options.Logger.Println(text)
 			}
 		} else {
 			break
@@ -163,14 +142,19 @@ func readStdoutAndStderr(
 	}
 
 	if err := stdoutScanner.Err(); err != nil {
-		return "", errors.WithStackTrace(err)
+		return Output{}, errors.WithStackTrace(err)
 	}
 
 	if err := stderrScanner.Err(); err != nil {
-		return "", errors.WithStackTrace(err)
+		return Output{}, errors.WithStackTrace(err)
 	}
 
-	return strings.Join(allOutput, "\n"), nil
+	output := Output{
+		Stdout:      strings.Join(stdoutOutput, ""),
+		Stderr:      strings.Join(stderrOutput, ""),
+		Interleaved: strings.Join(allOutput, ""),
+	}
+	return output, nil
 }
 
 func logCommand(options *ShellOptions, command string, args ...string) {
@@ -211,4 +195,34 @@ func formatEnvVars(options *ShellOptions) []string {
 		env = append(env, fmt.Sprintf("%s=%s", key, value))
 	}
 	return env
+}
+
+// ScanLinesIncludeRaw is a modified version of bufio.ScanLines that returns the newlines when scanning, unless it hits
+// the EOF. This is necessary so that we can return an accurate representation of what was outputted in the shell
+// (e.g., if the shell does NOT contain a newline at the end, it should be omitted - similarly, if the shell contains a
+// newline at the end, it should be included).
+// bufio.ScanLines is licensed under a BSD-style license.
+func ScanLinesIncludeRaw(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	if i := bytes.IndexByte(data, '\n'); i >= 0 {
+		// We have a full newline-terminated line, but make sure to append the newline token before returning.
+		return i + 1, append(dropCR(data[0:i]), '\n'), nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), dropCR(data), nil
+	}
+	// Request more data.
+	return 0, nil, nil
+}
+
+// dropCR drops a terminal \r from the data. This is the same implementation as bufio.dropCR.
+// Source function is licensed under a BSD-style license.
+func dropCR(data []byte) []byte {
+	if len(data) > 0 && data[len(data)-1] == '\r' {
+		return data[0 : len(data)-1]
+	}
+	return data
 }
