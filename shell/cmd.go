@@ -151,8 +151,7 @@ func readData(log *logrus.Logger, streamOutput bool, reader *bufio.Reader, write
 		}
 
 		if streamOutput {
-			// We use Print instead of Println to verbatim output what the command returns when streaming
-			log.Print(line)
+			log.Println(line)
 		}
 		if _, err := writer.WriteString(line); err != nil {
 			return err
