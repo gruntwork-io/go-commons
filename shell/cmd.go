@@ -7,16 +7,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/gruntwork-io/go-commons/errors"
+	"github.com/sirupsen/logrus"
 )
-
-// Output represents the command output captured as strings.
-type Output struct {
-	Stdout      string
-	Stderr      string
-	Interleaved string
-}
 
 // Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
 // the currently running app.
@@ -36,45 +31,45 @@ func RunShellCommand(options *ShellOptions, command string, args ...string) erro
 
 // Run the specified shell command with the specified arguments. Return its stdout, stderr, and interleaved output as
 // separate strings in a struct.
-func RunShellCommandAndGetOutputStruct(options *ShellOptions, command string, args ...string) (Output, error) {
+func RunShellCommandAndGetOutputStruct(options *ShellOptions, command string, args ...string) (*Output, error) {
 	return runShellCommand(options, false, command, args...)
 }
 
 // Run the specified shell command with the specified arguments. Return its stdout and stderr as a string
 func RunShellCommandAndGetOutput(options *ShellOptions, command string, args ...string) (string, error) {
 	out, err := runShellCommand(options, false, command, args...)
-	return out.Interleaved, err
+	return out.Combined(), err
 }
 
 // Run the specified shell command with the specified arguments. Return its interleaved stdout and stderr as a string
 // and also stream stdout and stderr to the OS stdout/stderr
 func RunShellCommandAndGetAndStreamOutput(options *ShellOptions, command string, args ...string) (string, error) {
 	out, err := runShellCommand(options, true, command, args...)
-	return out.Interleaved, err
+	return out.Combined(), err
 }
 
 // Run the specified shell command with the specified arguments. Return its stdout as a string
 func RunShellCommandAndGetStdout(options *ShellOptions, command string, args ...string) (string, error) {
 	out, err := runShellCommand(options, false, command, args...)
-	return out.Stdout, err
+	return out.Stdout(), err
 }
 
 // Run the specified shell command with the specified arguments. Return its stdout as a string and also stream stdout
 // and stderr to the OS stdout/stderr
 func RunShellCommandAndGetStdoutAndStreamOutput(options *ShellOptions, command string, args ...string) (string, error) {
 	out, err := runShellCommand(options, true, command, args...)
-	return out.Stdout, err
+	return out.Stdout(), err
 }
 
 // Run the specified shell command with the specified arguments. Return its stdout, stderr, and interleaved output as a
 // struct and also stream stdout and stderr to the OS stdout/stderr
-func RunShellCommandAndGetOutputStructAndStreamOutput(options *ShellOptions, command string, args ...string) (Output, error) {
+func RunShellCommandAndGetOutputStructAndStreamOutput(options *ShellOptions, command string, args ...string) (*Output, error) {
 	return runShellCommand(options, true, command, args...)
 }
 
 // Run the specified shell command with the specified arguments. Return its stdout and stderr as a string and also
 // stream stdout and stderr to the OS stdout/stderr
-func runShellCommand(options *ShellOptions, streamOutput bool, command string, args ...string) (Output, error) {
+func runShellCommand(options *ShellOptions, streamOutput bool, command string, args ...string) (*Output, error) {
 	logCommand(options, command, args...)
 	cmd := exec.Command(command, args...)
 
@@ -84,23 +79,23 @@ func runShellCommand(options *ShellOptions, streamOutput bool, command string, a
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return Output{}, errors.WithStackTrace(err)
+		return nil, errors.WithStackTrace(err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return Output{}, errors.WithStackTrace(err)
+		return nil, errors.WithStackTrace(err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return Output{}, errors.WithStackTrace(err)
+		return nil, errors.WithStackTrace(err)
 	}
 
 	output, err := readStdoutAndStderr(
+		options.Logger,
+		streamOutput,
 		stdout,
 		stderr,
-		options,
-		streamOutput,
 	)
 	if err != nil {
 		return output, err
@@ -110,56 +105,70 @@ func runShellCommand(options *ShellOptions, streamOutput bool, command string, a
 	return output, errors.WithStackTrace(err)
 }
 
-// This function captures stdout and stderr while still printing it to the stdout and stderr of this Go program
-func readStdoutAndStderr(
-	stdout io.ReadCloser,
-	stderr io.ReadCloser,
-	options *ShellOptions,
-	streamOutput bool,
-) (Output, error) {
-	stdoutOutput := []string{}
-	stderrOutput := []string{}
-	allOutput := []string{}
+// This function captures stdout and stderr into the given variables while still printing it to the stdout and stderr
+// of this Go program
+func readStdoutAndStderr(log *logrus.Logger, streamOutput bool, stdout, stderr io.ReadCloser) (*Output, error) {
+	out := newOutput()
+	stdoutReader := bufio.NewReader(stdout)
+	stderrReader := bufio.NewReader(stderr)
 
-	stdoutScanner := bufio.NewScanner(stdout)
-	stdoutScanner.Split(ScanLinesIncludeRaw)
-	stderrScanner := bufio.NewScanner(stderr)
-	stderrScanner.Split(ScanLinesIncludeRaw)
+	wg := &sync.WaitGroup{}
 
+	wg.Add(2)
+	var stdoutErr, stderrErr error
+	go func() {
+		defer wg.Done()
+		stdoutErr = readData(log, streamOutput, stdoutReader, out.stdout)
+	}()
+	go func() {
+		defer wg.Done()
+		stderrErr = readData(log, streamOutput, stderrReader, out.stderr)
+	}()
+	wg.Wait()
+
+	if stdoutErr != nil {
+		return out, stdoutErr
+	}
+	if stderrErr != nil {
+		return out, stderrErr
+	}
+
+	return out, nil
+}
+
+func readData(log *logrus.Logger, streamOutput bool, reader *bufio.Reader, writer io.StringWriter) error {
+	var line string
+	var readErr error
 	for {
-		if stdoutScanner.Scan() {
-			text := stdoutScanner.Text()
-			allOutput = append(allOutput, text)
-			stdoutOutput = append(stdoutOutput, text)
-			if streamOutput {
-				options.Logger.Println(text)
-			}
-		} else if stderrScanner.Scan() {
-			text := stderrScanner.Text()
-			allOutput = append(allOutput, text)
-			stderrOutput = append(stderrOutput, text)
-			if streamOutput {
-				options.Logger.Println(text)
-			}
-		} else {
+		line, readErr = reader.ReadString('\n')
+
+		// remove newline, our output is in a slice,
+		// one element per line.
+		line = strings.TrimSuffix(line, "\n")
+
+		// only return early if the line does not have
+		// any contents. We could have a line that does
+		// not not have a newline before io.EOF, we still
+		// need to add it to the output.
+		if len(line) == 0 && readErr == io.EOF {
+			break
+		}
+
+		if streamOutput {
+			log.Println(line)
+		}
+		if _, err := writer.WriteString(line); err != nil {
+			return err
+		}
+
+		if readErr != nil {
 			break
 		}
 	}
-
-	if err := stdoutScanner.Err(); err != nil {
-		return Output{}, errors.WithStackTrace(err)
+	if readErr != io.EOF {
+		return readErr
 	}
-
-	if err := stderrScanner.Err(); err != nil {
-		return Output{}, errors.WithStackTrace(err)
-	}
-
-	output := Output{
-		Stdout:      strings.Join(stdoutOutput, ""),
-		Stderr:      strings.Join(stderrOutput, ""),
-		Interleaved: strings.Join(allOutput, ""),
-	}
-	return output, nil
+	return nil
 }
 
 func logCommand(options *ShellOptions, command string, args ...string) {
