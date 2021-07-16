@@ -105,68 +105,6 @@ func runShellCommand(options *ShellOptions, streamOutput bool, command string, a
 	return output, errors.WithStackTrace(err)
 }
 
-// This function captures stdout and stderr into the given variables while still printing it to the stdout and stderr
-// of this Go program
-func readStdoutAndStderr(log *logrus.Logger, streamOutput bool, stdout, stderr io.ReadCloser) (*Output, error) {
-	out := newOutput()
-	stdoutReader := bufio.NewReader(stdout)
-	stderrReader := bufio.NewReader(stderr)
-
-	wg := &sync.WaitGroup{}
-
-	wg.Add(2)
-	var stdoutErr, stderrErr error
-	go func() {
-		defer wg.Done()
-		stdoutErr = readData(log, streamOutput, stdoutReader, out.stdout)
-	}()
-	go func() {
-		defer wg.Done()
-		stderrErr = readData(log, streamOutput, stderrReader, out.stderr)
-	}()
-	wg.Wait()
-
-	if stdoutErr != nil {
-		return out, stdoutErr
-	}
-	if stderrErr != nil {
-		return out, stderrErr
-	}
-
-	return out, nil
-}
-
-func readData(log *logrus.Logger, streamOutput bool, reader *bufio.Reader, writer io.StringWriter) error {
-	var line string
-	var readErr error
-	for {
-		line, readErr = reader.ReadString('\n')
-
-		// only return early if the line does not have
-		// any contents. We could have a line that does
-		// not not have a newline before io.EOF, we still
-		// need to add it to the output.
-		if len(line) == 0 && readErr == io.EOF {
-			break
-		}
-
-		if streamOutput {
-			log.Println(line)
-		}
-		if _, err := writer.WriteString(line); err != nil {
-			return err
-		}
-
-		if readErr != nil {
-			break
-		}
-	}
-	if readErr != io.EOF {
-		return readErr
-	}
-	return nil
-}
-
 func logCommand(options *ShellOptions, command string, args ...string) {
 	if options.SensitiveArgs {
 		options.Logger.Infof("Running command: %s (args redacted)", command)
