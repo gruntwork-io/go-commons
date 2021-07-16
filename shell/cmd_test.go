@@ -30,6 +30,14 @@ func TestRunShellCommandAndGetOutput(t *testing.T) {
 	assert.Equal(t, "hi\n", out)
 }
 
+func TestRunShellCommandAndGetOutputNoTerminatingNewLine(t *testing.T) {
+	t.Parallel()
+
+	out, err := RunShellCommandAndGetOutput(NewShellOptions(), "echo", "-n", "hi")
+	assert.NoError(t, err)
+	assert.Equal(t, "hi", out)
+}
+
 func TestRunShellCommandAndGetStdoutReturnsStdout(t *testing.T) {
 	t.Parallel()
 
@@ -44,6 +52,32 @@ func TestRunShellCommandAndGetStdoutDoesNotReturnStderr(t *testing.T) {
 	out, err := RunShellCommandAndGetStdout(NewShellOptions(), filepath.Join("test-fixture", "echo_hi_stderr.sh"))
 	assert.NoError(t, err)
 	assert.Equal(t, "", out)
+}
+
+func TestRunShellCommandAndGetStdoutAndStreamOutputDoesNotReturnStderr(t *testing.T) {
+	t.Parallel()
+
+	out, err := RunShellCommandAndGetStdoutAndStreamOutput(NewShellOptions(), filepath.Join("test-fixture", "echo_hi_stderr.sh"))
+	assert.NoError(t, err)
+	assert.Equal(t, "", out)
+}
+
+func TestRunShellCommandAndGetAndStreamOutput(t *testing.T) {
+	t.Parallel()
+
+	out, err := RunShellCommandAndGetAndStreamOutput(NewShellOptions(), filepath.Join("test-fixture", "echo_stdoutstderr.sh"))
+	assert.NoError(t, err)
+	assert.Equal(t, "hello\nworld\n", out)
+}
+
+func TestRunShellCommandAndGetOutputStruct(t *testing.T) {
+	t.Parallel()
+
+	out, err := RunShellCommandAndGetOutputStruct(NewShellOptions(), filepath.Join("test-fixture", "echo_stdoutstderr.sh"))
+	assert.NoError(t, err)
+	assert.Equal(t, "hello\nworld\n", out.Combined())
+	assert.Equal(t, "hello\n", out.Stdout())
+	assert.Equal(t, "world\n", out.Stderr())
 }
 
 func TestRunShellCommandWithEnv(t *testing.T) {
