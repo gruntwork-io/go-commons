@@ -65,7 +65,7 @@ func (st *outputStream) String() string {
 		return ""
 	}
 
-	return strings.Join(st.Lines, "\n")
+	return strings.Join(st.Lines, "")
 }
 
 type merged struct {
@@ -79,7 +79,7 @@ func (m *merged) String() string {
 		return ""
 	}
 
-	return strings.Join(m.Lines, "\n")
+	return strings.Join(m.Lines, "")
 }
 
 func (m *merged) WriteString(s string) (n int, err error) {

@@ -142,10 +142,6 @@ func readData(log *logrus.Logger, streamOutput bool, reader *bufio.Reader, write
 	for {
 		line, readErr = reader.ReadString('\n')
 
-		// remove newline, our output is in a slice,
-		// one element per line.
-		line = strings.TrimSuffix(line, "\n")
-
 		// only return early if the line does not have
 		// any contents. We could have a line that does
 		// not not have a newline before io.EOF, we still
@@ -155,7 +151,8 @@ func readData(log *logrus.Logger, streamOutput bool, reader *bufio.Reader, write
 		}
 
 		if streamOutput {
-			log.Println(line)
+			// We use Print instead of Println to verbatim output what the command returns when streaming
+			log.Print(line)
 		}
 		if _, err := writer.WriteString(line); err != nil {
 			return err
