@@ -1,16 +1,12 @@
 package shell
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 
 	"github.com/gruntwork-io/go-commons/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
