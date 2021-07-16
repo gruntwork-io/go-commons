@@ -11,7 +11,7 @@ import (
 )
 
 // UploadObjectString will upload the provided string to the given S3 bucket as an object under the specified key.
-func UploadObjectString(opts *Options, bucket string, key string, contents string) error {
+func UploadObjectString(opts *Options, bucket, key, contents string) error {
 	client, err := NewS3Client(opts)
 	if err != nil {
 		return err
