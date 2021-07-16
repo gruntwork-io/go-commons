@@ -75,9 +75,9 @@ func TestRunShellCommandAndGetOutputStruct(t *testing.T) {
 
 	out, err := RunShellCommandAndGetOutputStruct(NewShellOptions(), filepath.Join("test-fixture", "echo_stdoutstderr.sh"))
 	assert.NoError(t, err)
-	assert.Equal(t, "hello\nworld\n", out.Interleaved)
-	assert.Equal(t, "hello\n", out.Stdout)
-	assert.Equal(t, "world\n", out.Stderr)
+	assert.Equal(t, "hello\nworld\n", out.Combined())
+	assert.Equal(t, "hello\n", out.Stdout())
+	assert.Equal(t, "world\n", out.Stderr())
 }
 
 func TestRunShellCommandWithEnv(t *testing.T) {
