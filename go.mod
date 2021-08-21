@@ -30,7 +30,7 @@ require (
 	github.com/pquerna/otp v1.2.1-0.20191009055518-468c2dd2b58d // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.6.1
-	github.com/urfave/cli v1.22.4
+	github.com/urfave/cli/v2 v2.3.0
 	github.com/zclconf/go-cty v1.8.1 // indirect
 	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect

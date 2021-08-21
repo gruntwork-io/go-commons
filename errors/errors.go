@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	goerrors "github.com/go-errors/errors"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // If this error is returned, the program should exit with the given exit code.

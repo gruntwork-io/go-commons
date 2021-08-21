@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
+
+	"github.com/gruntwork-io/go-commons/errors"
 )
 
 func TestEntrypointGetExitCode(t *testing.T) {
@@ -54,8 +55,8 @@ func TestEntrypointNewAppWrapsAppHelpPrinter(t *testing.T) {
 	app.Writer = fakeStdout
 	args := []string{"houston", "help"}
 	err := app.Run(args)
-	assert.Nil(t, err)
-	assert.Equal(t, fakeStdout.String(), EXPECTED_APP_HELP_OUT)
+	assert.NoError(t, err)
+	assert.Equal(t, EXPECTED_APP_HELP_OUT, fakeStdout.String())
 }
 
 func TestEntrypointNewAppWrapsCommandHelpPrinter(t *testing.T) {
@@ -64,8 +65,8 @@ func TestEntrypointNewAppWrapsCommandHelpPrinter(t *testing.T) {
 	app.Writer = fakeStdout
 	args := []string{"houston", "help", "exec"}
 	err := app.Run(args)
-	assert.Nil(t, err)
-	assert.Equal(t, fakeStdout.String(), EXPECTED_EXEC_CMD_HELP_OUT)
+	assert.NoError(t, err)
+	assert.Equal(t, EXPECTED_EXEC_CMD_HELP_OUT, fakeStdout.String())
 }
 
 func TestEntrypointNewAppHelpPrinterHonorsLineWidthVar(t *testing.T) {
@@ -75,8 +76,8 @@ func TestEntrypointNewAppHelpPrinterHonorsLineWidthVar(t *testing.T) {
 	app.Writer = fakeStdout
 	args := []string{"houston", "help"}
 	err := app.Run(args)
-	assert.Nil(t, err)
-	assert.Equal(t, fakeStdout.String(), EXPECTED_APP_HELP_OUT_120_LINES)
+	assert.NoError(t, err)
+	assert.Equal(t, EXPECTED_APP_HELP_OUT_120_LINES, fakeStdout.String())
 }
 
 func TestEntrypointNewAppCommandHelpPrinterHonorsLineWidthVar(t *testing.T) {
@@ -86,8 +87,8 @@ func TestEntrypointNewAppCommandHelpPrinterHonorsLineWidthVar(t *testing.T) {
 	app.Writer = fakeStdout
 	args := []string{"houston", "help", "exec"}
 	err := app.Run(args)
-	assert.Nil(t, err)
-	assert.Equal(t, fakeStdout.String(), EXPECTED_EXEC_CMD_HELP_OUT_120_LINES)
+	assert.NoError(t, err)
+	assert.Equal(t, EXPECTED_EXEC_CMD_HELP_OUT_120_LINES, fakeStdout.String())
 }
 
 func noop(c *cli.Context) error { return nil }
@@ -100,9 +101,10 @@ func createSampleApp() *cli.App {
 	app.Description = `A CLI tool for interacting with Gruntwork Houston that you can use to authenticate to AWS on the CLI and to SSH to your EC2 Instances.`
 
 	configFlag := cli.StringFlag{
-		Name:  "config, c",
-		Value: "~/.houston/houston.yml",
-		Usage: "The configuration file for houston",
+		Name:    "config",
+		Aliases: []string{"c"},
+		Value:   "~/.houston/houston.yml",
+		Usage:   "The configuration file for houston",
 	}
 
 	portFlag := cli.IntFlag{
@@ -111,7 +113,7 @@ func createSampleApp() *cli.App {
 		Usage: "The TCP port the http server is running on",
 	}
 
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:      "exec",
 			Usage:     "Execute a command with temporary AWS credentials obtained by logging into Gruntwork Houston",
@@ -130,7 +132,7 @@ Examples:
    houston exec prod -- terraform apply
    houston exec stage -- packer build server.json`,
 			Action: noop,
-			Flags:  []cli.Flag{configFlag, portFlag},
+			Flags:  []cli.Flag{&configFlag, &portFlag},
 		},
 		{
 			Name:      "ssh",
@@ -155,7 +157,7 @@ Examples:
 
    houston ssh grunt@11.22.33.44`,
 			Action: noop,
-			Flags:  []cli.Flag{configFlag, portFlag},
+			Flags:  []cli.Flag{&configFlag, &portFlag},
 		},
 		{
 			Name:        "configure",
@@ -163,7 +165,7 @@ Examples:
 			UsageText:   "houston configure [options]",
 			Description: `The configure command can be used to setup or update the houston configuration file. When you run this command with no arguments, it will prompt you with the minimum required options for getting the CLI up and running. The prompt will include the current value as a default if the configuration file exists.`,
 			Action:      noop,
-			Flags:       []cli.Flag{configFlag},
+			Flags:       []cli.Flag{&configFlag},
 		},
 	}
 	return app

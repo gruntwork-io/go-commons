@@ -45,7 +45,7 @@ Here is the typical usage pattern in `main.go`:
 package main
 
 import (
-        "github.com/urfave/cli"
+        "github.com/urfave/cli/v2"
         "github.com/gruntwork-io/go-commons/entrypoint"
         "github.com/gruntwork-io/go-commons/version"
 )
@@ -56,7 +56,12 @@ func main() {
       app := entrypoint.NewApp()
 
       app.Name = "my-app"
-      app.Author = "Gruntwork <www.gruntwork.io>"
+      app.Authors = []*cli.Author{
+            {
+                Name: "Gruntwork",
+                Email: "www.gruntwork.io",
+            },
+      }
 
       // Set the version number from your app from the Version variable that is passed in at build time in `version` package
       // for more understanding see github.com/gruntwork-io/go-commons/version

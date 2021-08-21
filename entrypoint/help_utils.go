@@ -18,7 +18,7 @@ var HelpTextLineWidth = 80
 // - Headers are title cased as opposed to all caps
 // - NAME, VERSION, AUTHOR, COPYRIGHT, and GLOBAL OPTIONS sections are removed
 // - Global options are displayed by name in the usage text
-const CLI_APP_HELP_TEMPLATE = `Usage: {{if .UsageText }}{{.UsageText}}{{else}}{{.HelpName}} {{range $index, $option := .VisibleFlags}}[{{$option.GetName | PrefixedFirstFlagName}}] {{end}}{{if .Commands}}command [options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[args]{{end}}{{end}}{{if .Description}}
+const CLI_APP_HELP_TEMPLATE = `Usage: {{if .UsageText }}{{.UsageText}}{{else}}{{.HelpName}} {{range $index, $option := .VisibleFlags}}[{{$option.Name | PrefixedFirstFlagName}}] {{end}}{{if .Commands}}command [options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[args]{{end}}{{end}}{{if .Description}}
 
 {{.Description}}{{end}}{{if .Commands}}
 
