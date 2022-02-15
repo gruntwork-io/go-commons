@@ -25,6 +25,21 @@ func RunShellCommand(options *ShellOptions, command string, args ...string) erro
 	return errors.WithStackTrace(cmd.Run())
 }
 
+// Like RunShellCommand, but feed the given content to the stdin of the process.
+func RunShellCommandWithInput(options *ShellOptions, inputString string, command string, args ...string) error {
+	logCommand(options, command, args...)
+	cmd := exec.Command(command, args...)
+
+	// TODO: consider logging this via options.Logger
+	cmd.Stdin = strings.NewReader(inputString)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	setCommandOptions(options, cmd)
+
+	return errors.WithStackTrace(cmd.Run())
+}
+
 // Run the specified shell command with the specified arguments. Return its stdout, stderr, and interleaved output as
 // separate strings in a struct.
 func RunShellCommandAndGetOutputStruct(options *ShellOptions, command string, args ...string) (*Output, error) {
