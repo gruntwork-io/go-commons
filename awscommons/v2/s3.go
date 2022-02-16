@@ -1,4 +1,3 @@
-// NewS3Client will return a new AWS SDK client for interacting with AWS Secrets Manager.
 package awscommons
 
 import (
