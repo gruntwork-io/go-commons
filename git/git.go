@@ -13,7 +13,9 @@ func Clone(logger *logrus.Logger, repo string, targetDir string) error {
 	}
 
 	opts := shell.NewShellOptions()
-	opts.Logger = logger
+	if logger != nil {
+		opts.Logger = logger
+	}
 	return shell.RunShellCommand(opts, "git", "clone", repo, targetDir)
 }
 
@@ -24,7 +26,9 @@ func Checkout(logger *logrus.Logger, ref string, targetDir string) error {
 	}
 
 	opts := shell.NewShellOptions()
-	opts.Logger = logger
+	if logger != nil {
+		opts.Logger = logger
+	}
 	opts.WorkingDir = targetDir
 	return shell.RunShellCommand(opts, "git", "checkout", ref)
 }

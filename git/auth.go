@@ -12,7 +12,9 @@ import (
 // primary VCS platforms (GitHub, GitLab, BitBucket).
 func ConfigureForceHTTPS(logger *logrus.Logger) error {
 	opts := shell.NewShellOptions()
-	opts.Logger = logger
+	if logger != nil {
+		opts.Logger = logger
+	}
 
 	var allErr error
 
@@ -44,7 +46,9 @@ func ConfigureForceHTTPS(logger *logrus.Logger) error {
 // https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage
 func ConfigureHTTPSAuth(logger *logrus.Logger, gitUsername string, gitOauthToken string, vcsHost string) error {
 	opts := shell.NewShellOptions()
-	opts.Logger = logger
+	if logger != nil {
+		opts.Logger = logger
+	}
 
 	if err := shell.RunShellCommand(
 		opts,
