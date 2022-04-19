@@ -5,12 +5,14 @@ import (
 
 	"github.com/gruntwork-io/go-commons/shell"
 	"github.com/hashicorp/go-multierror"
+	"github.com/sirupsen/logrus"
 )
 
 // ConfigureForceHTTPS configures git to force usage of https endpoints instead of SSH based endpoints for the three
 // primary VCS platforms (GitHub, GitLab, BitBucket).
-func ConfigureForceHTTPS() error {
+func ConfigureForceHTTPS(logger *logrus.Logger) error {
 	opts := shell.NewShellOptions()
+	opts.Logger = logger
 
 	var allErr error
 
@@ -40,8 +42,10 @@ func ConfigureForceHTTPS() error {
 // with git over HTTPS. This uses the cache credentials store to configure the credentials. Refer to the git
 // documentation on credentials storage for more information:
 // https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage
-func ConfigureHTTPSAuth(gitUsername string, gitOauthToken string, vcsHost string) error {
+func ConfigureHTTPSAuth(logger *logrus.Logger, gitUsername string, gitOauthToken string, vcsHost string) error {
 	opts := shell.NewShellOptions()
+	opts.Logger = logger
+
 	if err := shell.RunShellCommand(
 		opts,
 		"git", "config", "--global",
