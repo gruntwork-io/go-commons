@@ -26,10 +26,9 @@ var (
 
 // NOTE: All these tests should be run in the provided docker environment to avoid polluting the local git configuration
 // settings. The tests will assert that it is running in the docker environment, and will fail if it is not.
+// All these tests are also run in serial to avoid race conditions on the git config file.
 
 func TestHTTPSAuth(t *testing.T) {
-	t.Parallel()
-
 	currentDir, err := os.Getwd()
 	require.NoError(t, err)
 	require.Equal(t, "/workspace/go-commons/git/test", currentDir)
@@ -45,8 +44,6 @@ func TestHTTPSAuth(t *testing.T) {
 }
 
 func TestForceHTTPS(t *testing.T) {
-	t.Parallel()
-
 	currentDir, err := os.Getwd()
 	require.NoError(t, err)
 	require.Equal(t, "/workspace/go-commons/git/test", currentDir)
