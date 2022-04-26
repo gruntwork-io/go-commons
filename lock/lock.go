@@ -2,6 +2,8 @@ package lock
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -9,7 +11,6 @@ import (
 	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/gruntwork-io/go-commons/retry"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 const (
@@ -40,6 +41,10 @@ type Options struct {
 	SleepBetweenRetries time.Duration
 	// The logger to use for the lock
 	Logger *logrus.Logger
+
+	// Custom session to use to authenticate to AWS in the SDK. If nil, constructs the session based on the default
+	// authentication chain in the SDK.
+	AwsSession *session.Session
 }
 
 type TimeoutExceeded struct {
@@ -79,23 +84,13 @@ func NewAuthenticatedSession(awsRegion string) (*session.Session, error) {
 	return sess, nil
 }
 
-// NewDynamoDb returns an authenticated client object for accessing DynamoDb
-func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
-	sess, err := NewAuthenticatedSession(awsRegion)
-	if err != nil {
-		return nil, err
-	}
-	dynamodbSvc := dynamodb.New(sess)
-	return dynamodbSvc, nil
-}
-
 // AcquireLock will attempt to acquire a lock in DynamoDB table while taking the configuration options into account.
 // We are using DynamoDB to create a table to help us track the lock status of different resources.
 // The acquiring of a lock attempts to create a table. The intention is that we have 1 table per resource in a single region.
 // This would allow the locking mechanism to flexibly decide if a resource is locked or not. For test cases where the AWS resource
 // is multi-region, or global, the configuration of which regions to use should reflect that.
 func AcquireLock(options *Options) error {
-	client, err := NewDynamoDb(options.AwsRegion)
+	client, err := getDynamoDBClient(options)
 	if err != nil {
 		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
 		return err
@@ -156,7 +151,7 @@ func acquireLock(options *Options, client *dynamodb.DynamoDB) error {
 // ReleaseLock will attempt to release the lock defined by the provided lock string in the configured lock table for the
 // configured region
 func ReleaseLock(options *Options) error {
-	client, err := NewDynamoDb(options.AwsRegion)
+	client, err := getDynamoDBClient(options)
 	if err != nil {
 		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
 		return err
@@ -297,7 +292,7 @@ func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bo
 // GetLockStatus attempts to acquire the lock and check if the expected item is there
 // If there's the expected Item with the correct `LockString` value - then the status is `locked`, if the item is not there - then the status is `not locked`
 func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
-	client, err := NewDynamoDb(options.AwsRegion)
+	client, err := getDynamoDBClient(options)
 	if err != nil {
 		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
 		return nil, err
@@ -317,4 +312,21 @@ func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
 	}
 
 	return item, nil
+}
+
+func getDynamoDBClient(options *Options) (*dynamodb.DynamoDB, error) {
+	if options.AwsSession == nil {
+		return NewDynamoDb(options.AwsRegion)
+	}
+	return dynamodb.New(options.AwsSession), nil
+}
+
+// NewDynamoDb returns an authenticated client object for accessing DynamoDb
+func NewDynamoDb(awsRegion string) (*dynamodb.DynamoDB, error) {
+	sess, err := NewAuthenticatedSession(awsRegion)
+	if err != nil {
+		return nil, err
+	}
+	dynamodbSvc := dynamodb.New(sess)
+	return dynamodbSvc, nil
 }
