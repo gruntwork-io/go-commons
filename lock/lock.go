@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/gruntwork-io/go-commons/retry"
 	"github.com/sirupsen/logrus"
@@ -312,6 +313,51 @@ func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
 	}
 
 	return item, nil
+}
+
+type Lock struct {
+	// In the DynamoDB lock table, "LockID" will be the key and the deployment URL will be the value
+	ID string `json:"LockID"`
+}
+
+// ScanLocks will perform a scan operation on the indicated DynamoDB table. This operation is useful
+// in certain cases, for example when we want to generate a report of all currently active ref arch
+// deployments tracked in our lock table. It returns a slice of strings representing a list of lock
+// IDs on the table that are currently held
+func ScanLocks(options *Options) ([]string, error) {
+	client, err := getDynamoDBClient(options)
+	if err != nil {
+		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
+		return nil, err
+	}
+
+	scanParams := &dynamodb.ScanInput{
+		// Use a consistent read for our scan operation. Though this is more expensive,
+		// we do this because we're using our results for report output, so we want to
+		// see the latest consistent status
+		ConsistentRead: aws.Bool(true),
+		TableName:      aws.String(options.LockTable),
+	}
+
+	result, err := client.Scan(scanParams)
+	if err != nil {
+		options.Logger.Errorf("Error scanning Lock Table: %s\n", err)
+	}
+
+	// Create a slice to hold the locks we fetch from DynamoDB
+	retrievedLocks := make([]string, len(result.Items))
+
+	//Unmarshal the returned items into strings for easy printing
+	for _, heldLock := range result.Items {
+		lock := Lock{}
+		err := dynamodbattribute.UnmarshalMap(heldLock, &lock)
+		if err != nil {
+			options.Logger.Errorf("Error unmarshalling deployment from DynamoDB: %s", err)
+		}
+		retrievedLocks = append(retrievedLocks, lock.ID)
+	}
+
+	return retrievedLocks, nil
 }
 
 func getDynamoDBClient(options *Options) (*dynamodb.DynamoDB, error) {
