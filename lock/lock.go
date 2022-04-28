@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/gruntwork-io/go-commons/retry"
 	"github.com/sirupsen/logrus"
@@ -314,10 +315,15 @@ func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
 	return item, nil
 }
 
+type DeploymentLock struct {
+	// In the DynamoDB lock table, "LockID" will be the key and the deployment URL will be the value
+	DeploymentURL string `json:"LockID"`
+}
+
 // ScanTable will perform a scan operation on the indicated DynamoDB table
 // This operation is useful in certain cases, for example when we want to
 // generate a report of all currently active ref arch deployments tracked in our lock table
-func ScanTable(options *Options) (*dynamodb.ScanOutput, error) {
+func ScanLocks(options *Options) ([]string, error) {
 	client, err := getDynamoDBClient(options)
 	if err != nil {
 		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
@@ -337,7 +343,20 @@ func ScanTable(options *Options) (*dynamodb.ScanOutput, error) {
 		options.Logger.Errorf("Error scanning Lock Table: %s\n", err)
 	}
 
-	return result, nil
+	// Create a slice to hold the locks we fetch from DynamoDB
+	retrievedLocks := make([]string, len(result.Items))
+
+	//Unmarshal the returned items into DeploymentLock structs for printing
+	for _, deployment := range result.Items {
+		lock := DeploymentLock{}
+		err := dynamodbattribute.UnmarshalMap(deployment, &lock)
+		if err != nil {
+			options.Logger.Errorf("Error unmarshalling deployment from DynamoDB: %s", err)
+		}
+		retrievedLocks = append(retrievedLocks, lock.DeploymentURL)
+	}
+
+	return retrievedLocks, nil
 }
 
 func getDynamoDBClient(options *Options) (*dynamodb.DynamoDB, error) {
