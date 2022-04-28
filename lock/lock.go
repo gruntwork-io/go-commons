@@ -314,6 +314,32 @@ func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
 	return item, nil
 }
 
+// ScanTable will perform a scan operation on the indicated DynamoDB table
+// This operation is useful in certain cases, for example when we want to
+// generate a report of all currently active ref arch deployments tracked in our lock table
+func ScanTable(options *Options) (*dynamodb.ScanOutput, error) {
+	client, err := getDynamoDBClient(options)
+	if err != nil {
+		options.Logger.Errorf("Error authenticating to AWS: %s\n", err)
+		return nil, err
+	}
+
+	scanParams := &dynamodb.ScanInput{
+		// Use a consistent read for our scan operation. Though this is more expensive,
+		// we do this because we're using our results for report output, so we want to
+		// see the latest consistent status
+		ConsistentRead: aws.Bool(true),
+		TableName:      aws.String(options.LockTable),
+	}
+
+	result, err := client.Scan(scanParams)
+	if err != nil {
+		options.Logger.Errorf("Error scanning Lock Table: %s\n", err)
+	}
+
+	return result, nil
+}
+
 func getDynamoDBClient(options *Options) (*dynamodb.DynamoDB, error) {
 	if options.AwsSession == nil {
 		return NewDynamoDb(options.AwsRegion)
