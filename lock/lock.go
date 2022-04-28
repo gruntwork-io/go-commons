@@ -315,14 +315,15 @@ func GetLockStatus(options *Options) (*dynamodb.GetItemOutput, error) {
 	return item, nil
 }
 
-type DeploymentLock struct {
+type Lock struct {
 	// In the DynamoDB lock table, "LockID" will be the key and the deployment URL will be the value
-	DeploymentURL string `json:"LockID"`
+	ID string `json:"LockID"`
 }
 
-// ScanTable will perform a scan operation on the indicated DynamoDB table
-// This operation is useful in certain cases, for example when we want to
-// generate a report of all currently active ref arch deployments tracked in our lock table
+// ScanLocks will perform a scan operation on the indicated DynamoDB table. This operation is useful
+// in certain cases, for example when we want to generate a report of all currently active ref arch
+// deployments tracked in our lock table. It returns a slice of strings representing a list of lock
+// IDs on the table that are currently held
 func ScanLocks(options *Options) ([]string, error) {
 	client, err := getDynamoDBClient(options)
 	if err != nil {
@@ -346,14 +347,14 @@ func ScanLocks(options *Options) ([]string, error) {
 	// Create a slice to hold the locks we fetch from DynamoDB
 	retrievedLocks := make([]string, len(result.Items))
 
-	//Unmarshal the returned items into DeploymentLock structs for printing
-	for _, deployment := range result.Items {
-		lock := DeploymentLock{}
-		err := dynamodbattribute.UnmarshalMap(deployment, &lock)
+	//Unmarshal the returned items into strings for easy printing
+	for _, heldLock := range result.Items {
+		lock := Lock{}
+		err := dynamodbattribute.UnmarshalMap(heldLock, &lock)
 		if err != nil {
 			options.Logger.Errorf("Error unmarshalling deployment from DynamoDB: %s", err)
 		}
-		retrievedLocks = append(retrievedLocks, lock.DeploymentURL)
+		retrievedLocks = append(retrievedLocks, lock.ID)
 	}
 
 	return retrievedLocks, nil
