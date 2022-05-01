@@ -6,10 +6,12 @@ require (
 	github.com/aws/aws-sdk-go v1.40.56
 	github.com/aws/aws-sdk-go-v2 v1.13.0
 	github.com/aws/aws-sdk-go-v2/config v1.1.6
+	github.com/aws/aws-sdk-go-v2/credentials v1.1.6
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.1.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.29.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.2.2
+	github.com/aws/aws-sdk-go-v2/service/sts v1.3.0
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
