@@ -1,10 +1,11 @@
+package shell
+
 // The structs and functions in this file are almost exactly the same as the version in terratest
 // (https://github.com/gruntwork-io/terratest/blob/37812f27666423c28ea22acb2bac2c80513dd318/modules/shell/output.go),
 // except this version does not trim newlines from the streamed and captured texts. This ensures that the newlines
 // reflect exactly how the underlying shell commands outputted. Otherwise, the newline is always stripped out on the
 // last line, regardless of if the original command included it. That final terminating newline is more significant in
 // production CLI usage vs testing purposes.
-package shell
 
 import (
 	"bufio"

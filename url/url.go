@@ -2,9 +2,10 @@ package url
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/go-commons/errors"
 	"net/url"
 	"strings"
+
+	"github.com/gruntwork-io/go-commons/errors"
 )
 
 // Create a URL with the given base, path parts, query string, and fragment. This method will properly URI encode
