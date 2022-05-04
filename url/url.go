@@ -57,7 +57,7 @@ func stripSlashes(str string) string {
 
 // Attempt to open a URL in the user's browser. We use this to open docs, PRs we've
 // programmatically opened, etc
-func openURL(url string) error {
+func OpenURL(url string) error {
 	var err error
 
 	switch runtime.GOOS {
