@@ -3,6 +3,8 @@ package url
 import (
 	"fmt"
 	"net/url"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/gruntwork-io/go-commons/errors"
@@ -51,4 +53,25 @@ func mergeQuery(originalQuery url.Values, newQuery url.Values) url.Values {
 // Remove all leading or trailing slashes in the given string
 func stripSlashes(str string) string {
 	return strings.Trim(str, "/")
+}
+
+// Attempt to open a URL in the user's browser. We use this to open docs, PRs we've
+// programmatically opened, etc
+func openURL(url string) error {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }
