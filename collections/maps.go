@@ -31,8 +31,8 @@ func Keys(m map[string]string) []string {
 	return out
 }
 
-// Flatten returns a string slice with key=value items, sorted alphabetically
-func Flatten(m map[string]string) []string {
+// KeyValueStringSlice returns a string slice with key=value items, sorted alphabetically
+func KeyValueStringSlice(m map[string]string) []string {
 	out := []string{}
 
 	for key, value := range m {

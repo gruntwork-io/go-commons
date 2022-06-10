@@ -140,7 +140,7 @@ func TestKeys(t *testing.T) {
 	}
 }
 
-func TestFlatten(t *testing.T) {
+func TestKeyValueStringSlice(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -153,7 +153,7 @@ func TestFlatten(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("%v", testCase.input), func(t *testing.T) {
-			actual := Flatten(testCase.input)
+			actual := KeyValueStringSlice(testCase.input)
 			assert.Equal(t, testCase.expected, actual)
 		})
 	}
