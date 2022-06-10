@@ -158,3 +158,24 @@ func TestKeyValueStringSlice(t *testing.T) {
 		})
 	}
 }
+
+func TestKeyValueStringSliceWithFormat(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		input    map[string]string
+		format   string
+		expected []string
+	}{
+		{map[string]string{"a": "foo"}, "%s='%s'", []string{"a='foo'"}},
+		{map[string]string{"a": "foo"}, "%s%s", []string{"afoo"}},
+		{map[string]string{"a": "foo", "b": "bar", "c": "baz"}, "%s=%s", []string{"a=foo", "b=bar", "c=baz"}},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("%v", testCase.input), func(t *testing.T) {
+			actual := KeyValueStringSliceWithFormat(testCase.input, testCase.format)
+			assert.Equal(t, testCase.expected, actual)
+		})
+	}
+}
