@@ -1,9 +1,10 @@
 package collections
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
 	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMergeMapsNoMaps(t *testing.T) {
@@ -123,7 +124,7 @@ func TestKeys(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		input	 map[string]string
+		input    map[string]string
 		expected []string
 	}{
 		{map[string]string{}, []string{}},
@@ -134,6 +135,25 @@ func TestKeys(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(fmt.Sprintf("%v", testCase.input), func(t *testing.T) {
 			actual := Keys(testCase.input)
+			assert.Equal(t, testCase.expected, actual)
+		})
+	}
+}
+
+func TestFlatten(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		input    map[string]string
+		expected []string
+	}{
+		{map[string]string{"a": "foo"}, []string{"a=foo"}},
+		{map[string]string{"a": "foo", "b": "bar", "c": "baz"}, []string{"a=foo", "b=bar", "c=baz"}},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("%v", testCase.input), func(t *testing.T) {
+			actual := Flatten(testCase.input)
 			assert.Equal(t, testCase.expected, actual)
 		})
 	}
