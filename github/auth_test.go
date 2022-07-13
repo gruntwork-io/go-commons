@@ -33,7 +33,8 @@ func TestGithubAppConfig(t *testing.T) {
 	gh := newGithubClient(token)
 	user, _, err := gh.Users.Get(context.Background(), "")
 	require.NoError(t, err)
-	assert.Equal(t, "foo", github.String(user.Login))
+	require.NotNil(t, user.Login)
+	assert.Equal(t, "foo", *user.Login)
 }
 
 func getGitHubAppConfig(t *testing.T) *GithubAppConfig {
