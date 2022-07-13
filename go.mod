@@ -10,8 +10,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.15.13
 	github.com/bgentry/speakeasy v0.1.0
+	github.com/bradleyfalzon/ghinstallation v1.1.1
 	github.com/fatih/color v1.13.0
 	github.com/go-errors/errors v1.4.2
+	github.com/google/go-github/v44 v44.1.0
 	github.com/gruntwork-io/terratest v0.40.17
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattn/go-zglob v0.0.3
@@ -19,6 +21,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.10.3
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 )
 
 require (
@@ -44,6 +47,7 @@ require (
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/go-logr/logr v0.2.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
@@ -51,6 +55,8 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
+	github.com/google/go-github/v29 v29.0.2 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
@@ -87,7 +93,6 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
 	golang.org/x/sys v0.0.0-20220517195934-5e4e11fc645e // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect

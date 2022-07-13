@@ -1,37 +1,14 @@
 defaults: &defaults
-  machine:
-    enabled: true
-    image: ubuntu-2004:202111-02
-env: &env
+  docker:
+    - image: 087285199408.dkr.ecr.us-east-1.amazonaws.com/circle-ci-test-image-base:go1.17-tf1.2-tg37.4-pck1.8-ci50.1
   environment:
-    GRUNTWORK_INSTALLER_VERSION: v0.0.36
-    TERRATEST_LOG_PARSER_VERSION: v0.40.1
-    TERRAFORM_AWS_CI_VERSION: v0.41.1
-    TFENV_VERSION: NONE
-    TERRAFORM_VERSION: 1.0.11
-    TERRAGRUNT_VERSION: NONE
-    PACKER_VERSION: NONE
-    GOLANG_VERSION: 1.17
     GO111MODULE: auto
 version: 2.1
 jobs:
   test:
     <<: *defaults
-    <<: *env
     steps:
       - checkout
-      - run:
-          name: install gruntwork utils
-          command: |
-            curl -Ls https://raw.githubusercontent.com/gruntwork-io/gruntwork-installer/master/bootstrap-gruntwork-installer.sh | bash /dev/stdin --version "${GRUNTWORK_INSTALLER_VERSION}"
-            gruntwork-install --module-name "gruntwork-module-circleci-helpers" --repo "https://github.com/gruntwork-io/terraform-aws-ci" --tag "$TERRAFORM_AWS_CI_VERSION"
-            gruntwork-install --binary-name "terratest_log_parser" --repo "https://github.com/gruntwork-io/terratest" --tag "${TERRATEST_LOG_PARSER_VERSION}"
-            configure-environment-for-gruntwork-module \
-              --tfenv-version ${TFENV_VERSION} \
-              --terraform-version ${TERRAFORM_VERSION} \
-              --terragrunt-version ${TERRAGRUNT_VERSION} \
-              --packer-version ${PACKER_VERSION} \
-              --go-version ${GOLANG_VERSION}
       - run: run-go-tests
 workflows:
   version: 2
@@ -43,3 +20,4 @@ workflows:
               only: /^v.*/
           context:
             - Gruntwork Admin
+            - Gruntwork Clients Test Github App
