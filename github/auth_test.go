@@ -31,10 +31,10 @@ func TestGithubAppConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	gh := newGithubClient(token)
-	user, _, err := gh.Users.Get(context.Background(), "")
+	org, _, err := gh.Organizations.Get(context.Background(), "gruntwork-clients")
 	require.NoError(t, err)
-	require.NotNil(t, user.Login)
-	assert.Equal(t, "foo", *user.Login)
+	require.NotNil(t, org.Login)
+	assert.Equal(t, "gruntwork-clients", *org.Login)
 }
 
 func getGitHubAppConfig(t *testing.T) *GithubAppConfig {
