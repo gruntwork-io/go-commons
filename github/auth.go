@@ -62,7 +62,7 @@ func LoadGithubAppConfigFromEnv(envVarName string) (*GithubAppConfig, error) {
 		return nil, err
 	}
 
-	var githubAppConfig *GithubAppConfig
-	jsonLoadErr := json.Unmarshal([]byte(githubAppConfigJSON), githubAppConfig)
-	return githubAppConfig, errors.WithStackTrace(jsonLoadErr)
+	var githubAppConfig GithubAppConfig
+	jsonLoadErr := json.Unmarshal([]byte(githubAppConfigJSON), &githubAppConfig)
+	return &githubAppConfig, errors.WithStackTrace(jsonLoadErr)
 }
