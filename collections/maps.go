@@ -3,6 +3,7 @@ package collections
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 const (
@@ -51,5 +52,27 @@ func KeyValueStringSliceWithFormat(m map[string]string, format string) []string 
 
 	sort.Strings(out)
 
+	return out
+}
+
+// KeyValueStringSliceAsMap converts a string slice with key=value items into a map of slice values. The slice will
+// contain more than one item if a key is repeated in the string slice list.
+func KeyValueStringSliceAsMap(kvPairs []string) map[string][]string {
+	out := make(map[string][]string)
+	for _, kvPair := range kvPairs {
+		x := strings.Split(kvPair, "=")
+		key := x[0]
+
+		var value string
+		if len(x) > 1 {
+			value = strings.Join(x[1:], "=")
+		}
+
+		if _, hasKey := out[key]; hasKey {
+			out[key] = append(out[key], value)
+		} else {
+			out[key] = []string{value}
+		}
+	}
 	return out
 }

@@ -179,3 +179,57 @@ func TestKeyValueStringSliceWithFormat(t *testing.T) {
 		})
 	}
 }
+
+func TestKeyValueStringSliceAsMap(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		input    []string
+		expected map[string][]string
+	}{
+		{
+			"BaseCase",
+			[]string{"key=value"},
+			map[string][]string{"key": []string{"value"}},
+		},
+		{"EmptyCase", []string{}, map[string][]string{}},
+		{
+			"RepeatedKey",
+			[]string{"key=valueA", "foo=bar", "key=valueB"},
+			map[string][]string{
+				"key": []string{"valueA", "valueB"},
+				"foo": []string{"bar"},
+			},
+		},
+		{
+			"EmptyValue",
+			[]string{"key", "foo=", "foo=baz"},
+			map[string][]string{
+				"key": []string{""},
+				"foo": []string{"", "baz"},
+			},
+		},
+		{
+			"EqualInValue",
+			[]string{"key=foo=bar"},
+			map[string][]string{
+				"key": []string{"foo=bar"},
+			},
+		},
+		{
+			"EmptyString",
+			[]string{""},
+			map[string][]string{
+				"": []string{""},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			actual := KeyValueStringSliceAsMap(testCase.input)
+			assert.Equal(t, testCase.expected, actual)
+		})
+	}
+}
