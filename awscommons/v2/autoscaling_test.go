@@ -8,6 +8,7 @@ import (
 	awsgo "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/gruntwork-io/terratest/modules/aws"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
@@ -22,7 +23,7 @@ func TestGetAsgByNameReturnsCorrectAsg(t *testing.T) {
 	otherName := fmt.Sprintf("%s-%s", t.Name(), otherUniqueID)
 
 	region := getRandomRegion(t)
-	asgSvc := aws.NewAsgClient(t, region)
+	opts := NewOptions(region)
 
 	defer terminateEc2InstancesByName(t, region, []string{name, otherName})
 	defer deleteAutoScalingGroup(t, name, region)
@@ -30,7 +31,7 @@ func TestGetAsgByNameReturnsCorrectAsg(t *testing.T) {
 	createTestAutoScalingGroup(t, name, region, 1)
 	createTestAutoScalingGroup(t, otherName, region, 1)
 
-	asg, err := GetAsgByName(asgSvc, name)
+	asg, err := GetAsgByName(opts, name)
 	require.NoError(t, err)
 	require.Equal(t, *asg.AutoScalingGroupName, name)
 }
@@ -42,25 +43,27 @@ func TestSetAsgCapacityDeploysNewInstances(t *testing.T) {
 	name := fmt.Sprintf("%s-%s", t.Name(), uniqueID)
 
 	region := getRandomRegion(t)
-	asgSvc := aws.NewAsgClient(t, region)
+	opts := NewOptions(region)
+	client, err := NewAutoScalingClient(opts)
+	require.NoError(t, err)
 
 	defer terminateEc2InstancesByName(t, region, []string{name})
 	defer deleteAutoScalingGroup(t, name, region)
 	createTestAutoScalingGroup(t, name, region, 1)
 
-	asg, err := GetAsgByName(asgSvc, name)
+	asg, err := GetAsgByName(opts, name)
 	require.NoError(t, err)
 	existingInstances := asg.Instances
 
-	require.NoError(t, setAsgCapacity(asgSvc, name, 2))
-	require.NoError(t, waitForCapacity(asgSvc, name, 40, 15*time.Second))
+	require.NoError(t, setAsgCapacity(client, opts, name, 2))
+	require.NoError(t, waitForCapacity(opts, name, 40, 15*time.Second))
 
-	asg, err = GetAsgByName(asgSvc, name)
+	asg, err = GetAsgByName(opts, name)
 	allInstances := asg.Instances
 	require.Equal(t, len(allInstances), len(existingInstances)+1)
 
 	existingInstanceIds := idsFromAsgInstances(existingInstances)
-	newInstanceIds, err := getLaunchedInstanceIds(asgSvc, name, existingInstanceIds)
+	newInstanceIds, err := getLaunchedInstanceIds(opts, name, existingInstanceIds)
 	require.NoError(t, err)
 	require.Equal(t, len(existingInstanceIds), 1)
 	require.Equal(t, len(newInstanceIds), 1)
@@ -74,20 +77,23 @@ func TestSetAsgCapacityRemovesInstances(t *testing.T) {
 	name := fmt.Sprintf("%s-%s", t.Name(), uniqueID)
 
 	region := getRandomRegion(t)
-	asgSvc := aws.NewAsgClient(t, region)
+	opts := NewOptions(region)
+	client, err := NewAutoScalingClient(opts)
+	require.NoError(t, err)
 
 	defer terminateEc2InstancesByName(t, region, []string{name})
 	defer deleteAutoScalingGroup(t, name, region)
 	createTestAutoScalingGroup(t, name, region, 2)
 
-	asg, err := GetAsgByName(asgSvc, name)
+	asg, err := GetAsgByName(opts, name)
 	require.NoError(t, err)
 	existingInstances := asg.Instances
 
-	require.NoError(t, setAsgCapacity(asgSvc, name, 1))
-	require.NoError(t, waitForCapacity(asgSvc, name, 40, 15*time.Second))
+	require.NoError(t, setAsgCapacity(client, opts, name, 1))
+	require.NoError(t, waitForCapacity(opts, name, 40, 15*time.Second))
 
-	asg, err = GetAsgByName(asgSvc, name)
+	asg, err = GetAsgByName(opts, name)
+	require.NoError(t, err)
 	allInstances := asg.Instances
 	require.Equal(t, len(allInstances), len(existingInstances)-1)
 }
@@ -100,56 +106,64 @@ func getRandomRegion(t *testing.T) string {
 	return aws.GetRandomRegion(t, approvedRegions, []string{})
 }
 
-func createTestAutoScalingGroup(t *testing.T, name string, region string, desiredCount int64) {
+func createTestAutoScalingGroup(t *testing.T, name string, region string, desiredCount int32) {
 	instance := createTestEC2Instance(t, region, name)
 
-	asgClient := aws.NewAsgClient(t, region)
-	param := &autoscaling.CreateAutoScalingGroupInput{
-		AutoScalingGroupName: &name,
-		InstanceId:           instance.InstanceId,
-		DesiredCapacity:      awsgo.Int64(desiredCount),
-		MinSize:              awsgo.Int64(1),
-		MaxSize:              awsgo.Int64(3),
-	}
-	_, err := asgClient.CreateAutoScalingGroup(param)
+	opts := NewOptions(region)
+	client, err := NewAutoScalingClient(opts)
 	require.NoError(t, err)
 
-	err = asgClient.WaitUntilGroupExists(&autoscaling.DescribeAutoScalingGroupsInput{
-		AutoScalingGroupNames: []*string{&name},
-	})
+	input := &autoscaling.CreateAutoScalingGroupInput{
+		AutoScalingGroupName: &name,
+		InstanceId:           instance.InstanceId,
+		DesiredCapacity:      awsgo.Int32(desiredCount),
+		MinSize:              awsgo.Int32(1),
+		MaxSize:              awsgo.Int32(3),
+	}
+	_, err = client.CreateAutoScalingGroup(opts.Context, input)
+	require.NoError(t, err)
+
+	waiter := autoscaling.NewGroupExistsWaiter(client)
+	err = waiter.Wait(opts.Context, &autoscaling.DescribeAutoScalingGroupsInput{
+		AutoScalingGroupNames: []string{name},
+	}, 10*time.Minute)
 	require.NoError(t, err)
 
 	aws.WaitForCapacity(t, name, region, 40, 15*time.Second)
 }
 
-func createTestEC2Instance(t *testing.T, region string, name string) ec2.Instance {
-	ec2Client := aws.NewEc2Client(t, region)
+func createTestEC2Instance(t *testing.T, region string, name string) ec2Types.Instance {
+	opts := NewOptions(region)
+	ec2Client, err := NewEC2Client(opts)
+	require.NoError(t, err)
+
 	imageID := aws.GetAmazonLinuxAmi(t, region)
-	params := &ec2.RunInstancesInput{
+	input := &ec2.RunInstancesInput{
 		ImageId:      awsgo.String(imageID),
-		InstanceType: awsgo.String("t2.micro"),
-		MinCount:     awsgo.Int64(1),
-		MaxCount:     awsgo.Int64(1),
+		InstanceType: ec2Types.InstanceTypeT2Micro,
+		MinCount:     awsgo.Int32(1),
+		MaxCount:     awsgo.Int32(1),
 	}
-	runResult, err := ec2Client.RunInstances(params)
+	runResult, err := ec2Client.RunInstances(opts.Context, input)
 	require.NoError(t, err)
 
 	require.NotEqual(t, len(runResult.Instances), 0)
 
-	err = ec2Client.WaitUntilInstanceExists(&ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{
+	waiter := ec2.NewInstanceExistsWaiter(ec2Client)
+	err = waiter.Wait(opts.Context, &ec2.DescribeInstancesInput{
+		Filters: []ec2Types.Filter{
 			{
 				Name:   awsgo.String("instance-id"),
-				Values: []*string{runResult.Instances[0].InstanceId},
+				Values: []string{*runResult.Instances[0].InstanceId},
 			},
 		},
-	})
+	}, 10*time.Minute)
 	require.NoError(t, err)
 
 	// Add test tag to the created instance
-	_, err = ec2Client.CreateTags(&ec2.CreateTagsInput{
-		Resources: []*string{runResult.Instances[0].InstanceId},
-		Tags: []*ec2.Tag{
+	_, err = ec2Client.CreateTags(opts.Context, &ec2.CreateTagsInput{
+		Resources: []string{*runResult.Instances[0].InstanceId},
+		Tags: []ec2Types.Tag{
 			{
 				Key:   awsgo.String("Name"),
 				Value: awsgo.String(name),
@@ -159,17 +173,18 @@ func createTestEC2Instance(t *testing.T, region string, name string) ec2.Instanc
 	require.NoError(t, err)
 
 	// EC2 Instance must be in a running before this function returns
-	err = ec2Client.WaitUntilInstanceRunning(&ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{
+	runningWaiter := ec2.NewInstanceRunningWaiter(ec2Client)
+	err = runningWaiter.Wait(opts.Context, &ec2.DescribeInstancesInput{
+		Filters: []ec2Types.Filter{
 			{
 				Name:   awsgo.String("instance-id"),
-				Values: []*string{runResult.Instances[0].InstanceId},
+				Values: []string{*runResult.Instances[0].InstanceId},
 			},
 		},
-	})
+	}, 10*time.Minute)
 	require.NoError(t, err)
 
-	return *runResult.Instances[0]
+	return runResult.Instances[0]
 }
 
 func terminateEc2InstancesByName(t *testing.T, region string, names []string) {
@@ -185,25 +200,32 @@ func deleteAutoScalingGroup(t *testing.T, name string, region string) {
 	// We have to scale ASG down to 0 before we can delete it
 	scaleAsgToZero(t, name, region)
 
-	asgClient := aws.NewAsgClient(t, region)
-	input := &autoscaling.DeleteAutoScalingGroupInput{AutoScalingGroupName: awsgo.String(name)}
-	_, err := asgClient.DeleteAutoScalingGroup(input)
+	opts := NewOptions(region)
+	client, err := NewAutoScalingClient(opts)
 	require.NoError(t, err)
-	err = asgClient.WaitUntilGroupNotExists(&autoscaling.DescribeAutoScalingGroupsInput{
-		AutoScalingGroupNames: []*string{awsgo.String(name)},
-	})
+
+	input := &autoscaling.DeleteAutoScalingGroupInput{AutoScalingGroupName: awsgo.String(name)}
+	_, err = client.DeleteAutoScalingGroup(opts.Context, input)
+	require.NoError(t, err)
+	waiter := autoscaling.NewGroupNotExistsWaiter(client)
+	err = waiter.Wait(opts.Context, &autoscaling.DescribeAutoScalingGroupsInput{
+		AutoScalingGroupNames: []string{name},
+	}, 10*time.Minute)
 	require.NoError(t, err)
 }
 
 func scaleAsgToZero(t *testing.T, name string, region string) {
-	asgClient := aws.NewAsgClient(t, region)
+	opts := NewOptions(region)
+	client, err := NewAutoScalingClient(opts)
+	require.NoError(t, err)
+
 	input := &autoscaling.UpdateAutoScalingGroupInput{
 		AutoScalingGroupName: awsgo.String(name),
-		DesiredCapacity:      awsgo.Int64(0),
-		MinSize:              awsgo.Int64(0),
-		MaxSize:              awsgo.Int64(0),
+		DesiredCapacity:      awsgo.Int32(0),
+		MinSize:              awsgo.Int32(0),
+		MaxSize:              awsgo.Int32(0),
 	}
-	_, err := asgClient.UpdateAutoScalingGroup(input)
+	_, err = client.UpdateAutoScalingGroup(opts.Context, input)
 	require.NoError(t, err)
 	aws.WaitForCapacity(t, name, region, 40, 15*time.Second)
 

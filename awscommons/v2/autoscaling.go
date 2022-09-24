@@ -1,20 +1,27 @@
 package awscommons
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
+	autoscalingTypes "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	"github.com/gruntwork-io/go-commons/collections"
 	"github.com/gruntwork-io/go-commons/errors"
+	"github.com/gruntwork-io/go-commons/logging"
 	"github.com/gruntwork-io/go-commons/retry"
-	"github.com/gruntwork-io/refarch-deployer/logging"
 )
 
 // GetAsgByName finds the Auto Scaling Group matching the given name. Returns an error if it cannot find a match.
-func GetAsgByName(svc *autoscaling.AutoScaling, asgName string) (*autoscaling.Group, error) {
-	input := autoscaling.DescribeAutoScalingGroupsInput{AutoScalingGroupNames: []*string{aws.String(asgName)}}
-	output, err := svc.DescribeAutoScalingGroups(&input)
+func GetAsgByName(opts *Options, asgName string) (*autoscalingTypes.AutoScalingGroup, error) {
+	client, err := NewAutoScalingClient(opts)
+	if err != nil {
+		return nil, errors.WithStackTrace(err)
+	}
+
+	input := &autoscaling.DescribeAutoScalingGroupsInput{AutoScalingGroupNames: []string{asgName}}
+	output, err := client.DescribeAutoScalingGroups(opts.Context, input)
 	if err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
@@ -22,35 +29,40 @@ func GetAsgByName(svc *autoscaling.AutoScaling, asgName string) (*autoscaling.Gr
 	if len(groups) == 0 {
 		return nil, errors.WithStackTrace(NewLookupError("ASG", asgName, "detailed data"))
 	}
-	return groups[0], nil
+	return &groups[0], nil
 }
 
 // ScaleUp sets the desired capacity, waits until all the instances are available, and returns the new instance IDs.
 func ScaleUp(
-	asgSvc *autoscaling.AutoScaling,
+	opts *Options,
 	asgName string,
 	originalInstanceIds []string,
-	desiredCapacity int64,
+	desiredCapacity int32,
 	maxRetries int,
 	sleepBetweenRetries time.Duration,
 ) ([]string, error) {
 	logger := logging.GetProjectLogger()
 
-	err := setAsgCapacity(asgSvc, asgName, desiredCapacity)
+	client, err := NewAutoScalingClient(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = setAsgCapacity(client, opts, asgName, desiredCapacity)
 	if err != nil {
 		logger.Errorf("Failed to set ASG desired capacity to %d", desiredCapacity)
 		logger.Errorf("If the capacity is set in AWS, undo by lowering back to the original desired capacity. If the desired capacity is not yet set, triage the error message below and try again.")
 		return nil, err
 	}
 
-	err = waitForCapacity(asgSvc, asgName, maxRetries, sleepBetweenRetries)
+	err = waitForCapacity(opts, asgName, maxRetries, sleepBetweenRetries)
 	if err != nil {
 		logger.Errorf("Timed out waiting for ASG to reach desired capacity.")
 		logger.Errorf("Undo by terminating all the new instances and trying again.")
 		return nil, err
 	}
 
-	newInstanceIds, err := getLaunchedInstanceIds(asgSvc, asgName, originalInstanceIds)
+	newInstanceIds, err := getLaunchedInstanceIds(opts, asgName, originalInstanceIds)
 	if err != nil {
 		logger.Errorf("Error retrieving information about the ASG.")
 		logger.Errorf("Undo by terminating all the new instances and trying again.")
@@ -62,8 +74,8 @@ func ScaleUp(
 
 // getLaunchedInstanceIds returns a list of the newly launched instance IDs in the ASG, given a list of the old instance
 // IDs before any change was made.
-func getLaunchedInstanceIds(svc *autoscaling.AutoScaling, asgName string, existingInstanceIds []string) ([]string, error) {
-	asg, err := GetAsgByName(svc, asgName)
+func getLaunchedInstanceIds(opts *Options, asgName string, existingInstanceIds []string) ([]string, error) {
+	asg, err := GetAsgByName(opts, asgName)
 	if err != nil {
 		return nil, err
 	}
@@ -80,15 +92,15 @@ func getLaunchedInstanceIds(svc *autoscaling.AutoScaling, asgName string, existi
 
 // setAsgCapacity sets the desired capacity on the auto scaling group. This will not wait for the ASG to expand or
 // shrink to that size. See waitForCapacity.
-func setAsgCapacity(svc *autoscaling.AutoScaling, asgName string, desiredCapacity int64) error {
+func setAsgCapacity(client *autoscaling.Client, opts *Options, asgName string, desiredCapacity int32) error {
 	logger := logging.GetProjectLogger()
 	logger.Infof("Updating ASG %s desired capacity to %d.", asgName, desiredCapacity)
 
-	input := autoscaling.SetDesiredCapacityInput{
+	input := &autoscaling.SetDesiredCapacityInput{
 		AutoScalingGroupName: aws.String(asgName),
-		DesiredCapacity:      aws.Int64(desiredCapacity),
+		DesiredCapacity:      aws.Int32(desiredCapacity),
 	}
-	_, err := svc.SetDesiredCapacity(&input)
+	_, err := client.SetDesiredCapacity(opts.Context, input)
 	if err != nil {
 		return errors.WithStackTrace(err)
 	}
@@ -97,17 +109,17 @@ func setAsgCapacity(svc *autoscaling.AutoScaling, asgName string, desiredCapacit
 	return nil
 }
 
-// setAsgMaxSize will set the max size on the auto scaling group. Note that updating the max size does not typically
+// SetAsgMaxSize sets the max size on the auto scaling group. Note that updating the max size does not typically
 // change the cluster size.
-func setAsgMaxSize(svc *autoscaling.AutoScaling, asgName string, maxSize int64) error {
+func SetAsgMaxSize(client *autoscaling.Client, opts *Options, asgName string, maxSize int32) error {
 	logger := logging.GetProjectLogger()
 	logger.Infof("Updating ASG %s max size to %d.", asgName, maxSize)
 
-	input := autoscaling.UpdateAutoScalingGroupInput{
+	input := &autoscaling.UpdateAutoScalingGroupInput{
 		AutoScalingGroupName: aws.String(asgName),
-		MaxSize:              aws.Int64(maxSize),
+		MaxSize:              aws.Int32(maxSize),
 	}
-	_, err := svc.UpdateAutoScalingGroup(&input)
+	_, err := client.UpdateAutoScalingGroup(opts.Context, input)
 	if err != nil {
 		return errors.WithStackTrace(err)
 	}
@@ -118,7 +130,7 @@ func setAsgMaxSize(svc *autoscaling.AutoScaling, asgName string, maxSize int64) 
 
 // waitForCapacity waits for the desired capacity to be reached.
 func waitForCapacity(
-	svc *autoscaling.AutoScaling,
+	opts *Options,
 	asgName string,
 	maxRetries int,
 	sleepBetweenRetries time.Duration,
@@ -132,13 +144,13 @@ func waitForCapacity(
 		maxRetries, sleepBetweenRetries,
 		func() error {
 			logger.Infof("Checking ASG %s capacity.", asgName)
-			asg, err := GetAsgByName(svc, asgName)
+			asg, err := GetAsgByName(opts, asgName)
 			if err != nil {
 				// TODO: Should we retry this lookup or fail right away?
 				return retry.FatalError{Underlying: err}
 			}
 
-			currentCapacity := int64(len(asg.Instances))
+			currentCapacity := int32(len(asg.Instances))
 			desiredCapacity := *asg.DesiredCapacity
 
 			if currentCapacity == desiredCapacity {
@@ -148,7 +160,7 @@ func waitForCapacity(
 
 			logger.Infof("ASG %s not yet at desired capacity %d (current %d).", asgName, desiredCapacity, currentCapacity)
 			logger.Infof("Waiting for %s...", sleepBetweenRetries)
-			return errors.WithStackTrace(fmt.Error("Still waiting for desired capacity to be reached..."))
+			return errors.WithStackTrace(fmt.Errorf("still waiting for desired capacity to be reached"))
 		},
 	)
 
@@ -164,18 +176,23 @@ func waitForCapacity(
 
 // DetachInstances requests AWS to detach the instances, removing them from the ASG. It will also
 // request to auto decrement the desired capacity.
-func detachInstances(asgSvc *autoscaling.AutoScaling, asgName string, idList []string) error {
+func DetachInstances(opts *Options, asgName string, idList []string) error {
 	logger := logging.GetProjectLogger()
 	logger.Infof("Detaching %d instances from ASG %s", len(idList), asgName)
+
+	client, err := NewAutoScalingClient(opts)
+	if err != nil {
+		return errors.WithStackTrace(err)
+	}
 
 	// AWS has a 20 instance limit for this, so we detach in groups of 20 ids
 	for _, smallIDList := range collections.BatchListIntoGroupsOf(idList, 20) {
 		input := &autoscaling.DetachInstancesInput{
 			AutoScalingGroupName:           aws.String(asgName),
-			InstanceIds:                    aws.StringSlice(smallIDList),
+			InstanceIds:                    smallIDList,
 			ShouldDecrementDesiredCapacity: aws.Bool(true),
 		}
-		_, err := asgSvc.DetachInstances(input)
+		_, err := client.DetachInstances(opts.Context, input)
 		if err != nil {
 			return errors.WithStackTrace(err)
 		}
@@ -186,10 +203,19 @@ func detachInstances(asgSvc *autoscaling.AutoScaling, asgName string, idList []s
 }
 
 // idsFromAsgInstances returns a list of the instance IDs given a list of instance representations from the ASG API.
-func idsFromAsgInstances(instances []*autoscaling.Instance) []string {
+func idsFromAsgInstances(instances []autoscalingTypes.Instance) []string {
 	idList := []string{}
 	for _, inst := range instances {
-		idList = append(idList, aws.StringValue(inst.InstanceId))
+		idList = append(idList, aws.ToString(inst.InstanceId))
 	}
 	return idList
+}
+
+// NewAutoscalingClient returns a new AWS SDK client for interacting with AWS Autoscaling.
+func NewAutoScalingClient(opts *Options) (*autoscaling.Client, error) {
+	cfg, err := NewDefaultConfig(opts)
+	if err != nil {
+		return nil, errors.WithStackTrace(err)
+	}
+	return autoscaling.NewFromConfig(cfg), nil
 }
