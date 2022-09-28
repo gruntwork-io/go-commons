@@ -11,7 +11,6 @@ import (
 	ecsTypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/gruntwork-io/go-commons/collections"
 	"github.com/gruntwork-io/go-commons/errors"
-	"github.com/gruntwork-io/go-commons/logging"
 	"github.com/gruntwork-io/go-commons/retry"
 )
 
@@ -29,8 +28,9 @@ func GetContainerInstanceArns(opts *Options, clusterName string) ([]string, erro
 		return nil, err
 	}
 
-	logger := logging.GetProjectLogger()
-	logger.Infof("Looking up Container Instance ARNs for ECS cluster %s", clusterName)
+	if opts.Logger != nil {
+		opts.Logger.Debugf("Looking up Container Instance ARNs for ECS cluster %s", clusterName)
+	}
 
 	input := &ecs.ListContainerInstancesInput{Cluster: aws.String(clusterName)}
 	arns := []string{}
@@ -60,7 +60,6 @@ func StartDrainingContainerInstances(opts *Options, clusterName string, containe
 		return err
 	}
 
-	logger := logging.GetProjectLogger()
 	batchSize := 10
 	numBatches := int(math.Ceil(float64(len(containerInstanceArns) / batchSize)))
 
@@ -68,7 +67,9 @@ func StartDrainingContainerInstances(opts *Options, clusterName string, containe
 	for batchIdx, batchedArnList := range collections.BatchListIntoGroupsOf(containerInstanceArns, batchSize) {
 		batchedArns := aws.StringSlice(batchedArnList)
 
-		logger.Infof("Putting batch %d/%d of container instances in cluster %s into DRAINING state", batchIdx, numBatches, clusterName)
+		if opts.Logger != nil {
+			opts.Logger.Debugf("Putting batch %d/%d of container instances in cluster %s into DRAINING state", batchIdx, numBatches, clusterName)
+		}
 		input := &ecs.UpdateContainerInstancesStateInput{
 			Cluster:            aws.String(clusterName),
 			ContainerInstances: aws.ToStringSlice(batchedArns),
@@ -77,18 +78,25 @@ func StartDrainingContainerInstances(opts *Options, clusterName string, containe
 		_, err := client.UpdateContainerInstancesState(opts.Context, input)
 		if err != nil {
 			errList.AddError(err)
-			logger.Errorf("Encountered error starting to drain container instances in batch %d: %s", batchIdx, err)
-			logger.Errorf("Container Instance ARNs: %s", strings.Join(batchedArnList, ","))
+			if opts.Logger != nil {
+				opts.Logger.Errorf("Encountered error starting to drain container instances in batch %d: %s", batchIdx, err)
+				opts.Logger.Errorf("Container Instance ARNs: %s", strings.Join(batchedArnList, ","))
+			}
 			continue
 		}
 
-		logger.Infof("Started draining %d container instances from batch %d", len(batchedArnList), batchIdx)
+		if opts.Logger != nil {
+			opts.Logger.Debugf("Started draining %d container instances from batch %d", len(batchedArnList), batchIdx)
+		}
 	}
 
 	if !errList.IsEmpty() {
 		return errors.WithStackTrace(errList)
 	}
-	logger.Infof("Successfully started draining all %d container instances", len(containerInstanceArns))
+
+	if opts.Logger != nil {
+		opts.Logger.Debugf("Successfully started draining all %d container instances", len(containerInstanceArns))
+	}
 	return nil
 }
 
@@ -100,14 +108,15 @@ func WaitForContainerInstancesToDrain(opts *Options, clusterName string, contain
 		return err
 	}
 
-	logger := logging.GetProjectLogger()
-	logger.Infof("Checking if all ECS Tasks have been drained from the ECS Container Instances in Cluster %s.", clusterName)
+	if opts.Logger != nil {
+		opts.Logger.Debugf("Checking if all ECS Tasks have been drained from the ECS Container Instances in Cluster %s.", clusterName)
+	}
 
 	batchSize := 100
 	numBatches := int(math.Ceil(float64(len(containerInstanceArns) / batchSize)))
 
 	err = retry.DoWithRetry(
-		logger.Logger,
+		opts.Logger,
 		"Wait for Container Instances to be Drained",
 		maxRetries, sleepBetweenRetries,
 		func() error {
@@ -115,7 +124,9 @@ func WaitForContainerInstancesToDrain(opts *Options, clusterName string, contain
 			for batchIdx, batchedArnList := range collections.BatchListIntoGroupsOf(containerInstanceArns, batchSize) {
 				batchedArns := aws.StringSlice(batchedArnList)
 
-				logger.Infof("Fetching description of batch %d/%d of ECS Instances in Cluster %s.", batchIdx, numBatches, clusterName)
+				if opts.Logger != nil {
+					opts.Logger.Debugf("Fetching description of batch %d/%d of ECS Instances in Cluster %s.", batchIdx, numBatches, clusterName)
+				}
 				input := &ecs.DescribeContainerInstancesInput{
 					Cluster:            aws.String(clusterName),
 					ContainerInstances: aws.ToStringSlice(batchedArns),
@@ -134,7 +145,9 @@ func WaitForContainerInstancesToDrain(opts *Options, clusterName string, contain
 
 			// Yay, all done.
 			if drained, _ := allInstancesFullyDrained(responses); drained == true {
-				logger.Infof("All container instances have been drained in Cluster %s!", clusterName)
+				if opts.Logger != nil {
+					opts.Logger.Debugf("All container instances have been drained in Cluster %s!", clusterName)
+				}
 				return nil
 			}
 
@@ -181,19 +194,24 @@ func allInstancesFullyDrained(responses []*ecs.DescribeContainerInstancesOutput)
 }
 
 func instanceFullyDrained(instance ecsTypes.ContainerInstance) bool {
-	logger := logging.GetProjectLogger()
 	instanceArn := instance.ContainerInstanceArn
 
 	if *instance.Status == "ACTIVE" {
-		logger.Infof("The ECS Container Instance %s is still in ACTIVE status", *instanceArn)
+		if opts.Logger != nil {
+			opts.Logger.Debugf("The ECS Container Instance %s is still in ACTIVE status", *instanceArn)
+		}
 		return false
 	}
 	if instance.PendingTasksCount > 0 {
-		logger.Infof("The ECS Container Instance %s still has pending tasks", *instanceArn)
+		if opts.Logger != nil {
+			opts.Logger.Debugf("The ECS Container Instance %s still has pending tasks", *instanceArn)
+		}
 		return false
 	}
 	if instance.RunningTasksCount > 0 {
-		logger.Infof("The ECS Container Instance %s still has running tasks", *instanceArn)
+		if opts.Logger != nil {
+			opts.Logger.Debugf("The ECS Container Instance %s still has running tasks", *instanceArn)
+		}
 		return false
 	}
 
