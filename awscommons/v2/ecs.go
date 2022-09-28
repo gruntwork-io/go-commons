@@ -8,7 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
-	ecsTypes "github.com/aws/aws-sdk-go-v2/service/ecs/types"
+	ecs_types "github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/gruntwork-io/go-commons/collections"
 	"github.com/gruntwork-io/go-commons/errors"
 	"github.com/gruntwork-io/go-commons/retry"
@@ -193,7 +193,7 @@ func allInstancesFullyDrained(responses []*ecs.DescribeContainerInstancesOutput)
 	return true, nil
 }
 
-func instanceFullyDrained(instance ecsTypes.ContainerInstance) bool {
+func instanceFullyDrained(instance ecs_types.ContainerInstance) bool {
 	instanceArn := instance.ContainerInstanceArn
 
 	if *instance.Status == "ACTIVE" {
