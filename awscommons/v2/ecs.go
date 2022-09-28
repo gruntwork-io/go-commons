@@ -14,6 +14,9 @@ import (
 	"github.com/gruntwork-io/go-commons/retry"
 )
 
+// maxLoopsForNextToken is set to avoid infinite loops when checking for Container Instances.
+const maxLoopsForNextToken = 100
+
 // GetContainerInstanceArns gets the container instance ARNs of all the EC2 instances in an ECS Cluster.
 // ECS container instance ARNs are different from EC2 instance IDs!
 // An ECS container instance is an EC2 instance that runs the ECS container agent and has been registered into
@@ -35,7 +38,9 @@ func GetContainerInstanceArns(opts *Options, clusterName string) ([]string, erro
 	input := &ecs.ListContainerInstancesInput{Cluster: aws.String(clusterName)}
 	arns := []string{}
 	// Handle pagination by repeatedly making the API call while there is a next token set.
-	for {
+	// TODO: Consider adding a maximum to this for loop in case we always get a NextToken.
+	// This could be timeout based or it could be based on the number of loops.
+	for i := 0; i < maxLoopsForNextToken; i++ {
 		result, err := client.ListContainerInstances(opts.Context, input)
 		if err != nil {
 			return nil, errors.WithStackTrace(err)
@@ -144,20 +149,20 @@ func WaitForContainerInstancesToDrain(opts *Options, clusterName string, contain
 			}
 
 			// Yay, all done.
-			if drained, _ := allInstancesFullyDrained(opts, responses); drained == true {
+			if drained, dErr := allInstancesFullyDrained(opts, responses); drained == true {
+				if dErr != nil {
+					// This error pertains to there being no instances found.
+					// TODO: Not sure if we should fail here or retry. Failing for now.
+					return retry.FatalError{Underlying: dErr}
+				}
 				if opts.Logger != nil {
 					opts.Logger.Debugf("All container instances have been drained in Cluster %s!", clusterName)
 				}
 				return nil
 			}
 
-			// If there's no error, retry.
-			if err == nil {
-				return errors.WithStackTrace(fmt.Errorf("container instances still draining"))
-			}
-
-			// Else, there's an error, halt and fail.
-			return retry.FatalError{Underlying: err}
+			// In all other cases, retry.
+			return errors.WithStackTrace(fmt.Errorf("container instances still draining"))
 		})
 	return errors.WithStackTrace(err)
 }
