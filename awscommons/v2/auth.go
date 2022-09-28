@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/gruntwork-io/go-commons/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -17,6 +18,8 @@ type Options struct {
 	Region string
 
 	Context context.Context
+
+	Logger *logrus.Entry
 }
 
 // NewOptions will create a new aws.Options struct that provides reasonable defaults for unspecified values.
