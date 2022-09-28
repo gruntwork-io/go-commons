@@ -9,6 +9,11 @@ import (
 var globalLogLevel = logrus.InfoLevel
 var globalLogLevelLock = sync.Mutex{}
 
+func GetProjectLogger() *logrus.Entry {
+	logger := GetLogger("")
+	return logger.WithField("name", "go-commons")
+}
+
 // Create a new logger with the given name
 func GetLogger(name string) *logrus.Logger {
 	logger := logrus.New()
