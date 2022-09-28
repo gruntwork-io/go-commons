@@ -116,7 +116,7 @@ func WaitForContainerInstancesToDrain(opts *Options, clusterName string, contain
 	numBatches := int(math.Ceil(float64(len(containerInstanceArns) / batchSize)))
 
 	err = retry.DoWithRetry(
-		opts.Logger,
+		opts.Logger.Logger,
 		"Wait for Container Instances to be Drained",
 		maxRetries, sleepBetweenRetries,
 		func() error {
@@ -144,7 +144,7 @@ func WaitForContainerInstancesToDrain(opts *Options, clusterName string, contain
 			}
 
 			// Yay, all done.
-			if drained, _ := allInstancesFullyDrained(responses); drained == true {
+			if drained, _ := allInstancesFullyDrained(opts, responses); drained == true {
 				if opts.Logger != nil {
 					opts.Logger.Debugf("All container instances have been drained in Cluster %s!", clusterName)
 				}
@@ -177,7 +177,7 @@ func NewECSClient(opts *Options) (*ecs.Client, error) {
 	return ecs.NewFromConfig(cfg), nil
 }
 
-func allInstancesFullyDrained(responses []*ecs.DescribeContainerInstancesOutput) (bool, error) {
+func allInstancesFullyDrained(opts *Options, responses []*ecs.DescribeContainerInstancesOutput) (bool, error) {
 	for _, response := range responses {
 		instances := response.ContainerInstances
 		if len(instances) == 0 {
@@ -185,7 +185,7 @@ func allInstancesFullyDrained(responses []*ecs.DescribeContainerInstancesOutput)
 		}
 
 		for _, instance := range instances {
-			if !instanceFullyDrained(instance) {
+			if !instanceFullyDrained(opts, instance) {
 				return false, nil
 			}
 		}
@@ -193,7 +193,7 @@ func allInstancesFullyDrained(responses []*ecs.DescribeContainerInstancesOutput)
 	return true, nil
 }
 
-func instanceFullyDrained(instance ecs_types.ContainerInstance) bool {
+func instanceFullyDrained(opts *Options, instance ecs_types.ContainerInstance) bool {
 	instanceArn := instance.ContainerInstanceArn
 
 	if *instance.Status == "ACTIVE" {
