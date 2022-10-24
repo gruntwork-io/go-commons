@@ -1,11 +1,13 @@
 package files
 
 import (
+	"io/ioutil"
 	"path/filepath"
 	"regexp"
-	"io/ioutil"
-	"github.com/gruntwork-io/go-commons/errors"
+
 	"github.com/mattn/go-zglob"
+
+	"github.com/gruntwork-io/go-commons/errors"
 )
 
 // Return the canonical version of the given path, relative to the given base path. That is, if the given path is a
@@ -68,6 +70,13 @@ func Grep(regex *regexp.Regexp, glob string) (bool, error) {
 
 // Return the relative path you would have to take to get from basePath to path
 func GetPathRelativeTo(path string, basePath string) (string, error) {
+	if path == "" {
+		path = "."
+	}
+	if basePath == "" {
+		basePath = "."
+	}
+
 	inputFolderAbs, err := filepath.Abs(basePath)
 	if err != nil {
 		return "", errors.WithStackTrace(err)
@@ -83,6 +92,5 @@ func GetPathRelativeTo(path string, basePath string) (string, error) {
 		return "", errors.WithStackTrace(err)
 	}
 
-	return relPath, nil
+	return filepath.ToSlash(relPath), nil
 }
-
