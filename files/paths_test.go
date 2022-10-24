@@ -1,20 +1,23 @@
 package files
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
 	"regexp"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPathRelativeTo(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		path	 string
+		path     string
 		basePath string
 		expected string
 	}{
 		{"", "", "."},
+		{"", "./child", ".."},
+		{"./child", "", "child"},
 		{"/root", "/root", "."},
 		{"/root", "/root/child", ".."},
 		{"/root", "/root/child/sub-child/sub-sub-child", "../../.."},
@@ -35,7 +38,7 @@ func TestCanonicalPath(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		path	 string
+		path     string
 		basePath string
 		expected string
 	}{
