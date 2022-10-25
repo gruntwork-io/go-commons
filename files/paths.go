@@ -68,7 +68,8 @@ func Grep(regex *regexp.Regexp, glob string) (bool, error) {
 	return false, nil
 }
 
-// Return the relative path you would have to take to get from basePath to path
+// GetPathRelativeTo returns the relative path you would have to take to get from basePath to path. If either path
+// or basePath are symbolic links, they will be evaluated before the relative path between them is calculated.
 func GetPathRelativeTo(path string, basePath string) (string, error) {
 	if path == "" {
 		path = "."
