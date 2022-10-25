@@ -68,7 +68,8 @@ func Grep(regex *regexp.Regexp, glob string) (bool, error) {
 	return false, nil
 }
 
-// Return the relative path you would have to take to get from basePath to path
+// GetPathRelativeTo returns the relative path you would have to take to get from basePath to path. If either path
+// or basePath are symbolic links, they will be evaluated before the relative path between them is calculated.
 func GetPathRelativeTo(path string, basePath string) (string, error) {
 	if path == "" {
 		path = "."
@@ -77,12 +78,22 @@ func GetPathRelativeTo(path string, basePath string) (string, error) {
 		basePath = "."
 	}
 
-	inputFolderAbs, err := filepath.Abs(basePath)
+	basePathEvaluated, err := filepath.EvalSymlinks(basePath)
 	if err != nil {
 		return "", errors.WithStackTrace(err)
 	}
 
-	fileAbs, err := filepath.Abs(path)
+	inputFolderAbs, err := filepath.Abs(basePathEvaluated)
+	if err != nil {
+		return "", errors.WithStackTrace(err)
+	}
+
+	pathEvaluated, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return "", errors.WithStackTrace(err)
+	}
+
+	fileAbs, err := filepath.Abs(pathEvaluated)
 	if err != nil {
 		return "", errors.WithStackTrace(err)
 	}

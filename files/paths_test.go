@@ -1,6 +1,7 @@
 package files
 
 import (
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -27,8 +28,12 @@ func TestGetPathRelativeTo(t *testing.T) {
 		{"/root", "/other-root/sub-child/sub-sub-child", "../../../root"},
 	}
 
+	fixtureRoot := "../fixtures/files"
+
 	for _, testCase := range testCases {
-		actual, err := GetPathRelativeTo(testCase.path, testCase.basePath)
+		path := filepath.Join(fixtureRoot, testCase.path)
+		basePath := filepath.Join(fixtureRoot, testCase.basePath)
+		actual, err := GetPathRelativeTo(path, basePath)
 		assert.Nil(t, err, "Unexpected error for path %s and basePath %s: %v", testCase.path, testCase.basePath, err)
 		assert.Equal(t, testCase.expected, actual, "For path %s and basePath %s", testCase.path, testCase.basePath)
 	}
