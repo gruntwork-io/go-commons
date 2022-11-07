@@ -97,7 +97,6 @@ func TestRemoveElementFromList(t *testing.T) {
 		actual := RemoveElementFromList(testCase.list, testCase.element)
 		assert.Equal(t, testCase.expected, actual, "For list %v and element %s", testCase.list, testCase.element)
 	}
-
 }
 
 func TestBatchListIntoGroupsOf(t *testing.T) {

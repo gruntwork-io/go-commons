@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMergeMaps(t *testing.T) {
@@ -69,7 +68,7 @@ func TestMergeMaps(t *testing.T) {
 			t.Parallel()
 
 			actual := MergeMaps(testCase.mapsToMerge...)
-			require.Equal(t, testCase.expected, actual)
+			assert.Equal(t, testCase.expected, actual)
 		})
 	}
 
@@ -131,7 +130,7 @@ func TestMergeMaps(t *testing.T) {
 			t.Parallel()
 
 			actual := MergeMaps(testCase.mapsToMerge...)
-			require.Equal(t, testCase.expected, actual)
+			assert.Equal(t, testCase.expected, actual)
 		})
 	}
 }
