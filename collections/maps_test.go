@@ -11,7 +11,7 @@ func TestMergeMapsNoMaps(t *testing.T) {
 	t.Parallel()
 
 	expected := map[string]interface{}{}
-	assert.Equal(t, expected, MergeMaps())
+	assert.Equal(t, expected, MergeMaps[string, interface{}]())
 }
 
 func TestMergeMapsOneEmptyMap(t *testing.T) {

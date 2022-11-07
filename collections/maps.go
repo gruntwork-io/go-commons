@@ -4,23 +4,23 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"golang.org/x/exp/maps"
 )
 
 const (
 	DefaultKeyValueStringSliceFormat = "%s=%s"
 )
 
-// Merge all the maps into one. Sadly, Go has no generics, so this is only defined for string to interface maps.
-func MergeMaps(maps ...map[string]interface{}) map[string]interface{} {
-	out := map[string]interface{}{}
+// MergeMaps merges all the maps into one
+func MergeMaps[K comparable, V any](mapsToMerge ...map[K]V) map[K]V {
+	result := map[K]V{}
 
-	for _, currMap := range maps {
-		for key, value := range currMap {
-			out[key] = value
-		}
+	for _, currMap := range mapsToMerge {
+		maps.Copy(result, currMap)
 	}
 
-	return out
+	return result
 }
 
 // Return the keys for the given map, sorted alphabetically
