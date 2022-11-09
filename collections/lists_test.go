@@ -79,21 +79,23 @@ func TestRemoveElementFromList(t *testing.T) {
 		assert.Equal(t, testCase.expected, actual, "For list %v and element %s", testCase.list, testCase.element)
 	}
 
-	testCasesInt := []struct {
-		list     []int
-		element  int
-		expected []int
+	type customInt int
+
+	testCasesCustomInt := []struct {
+		list     []customInt
+		element  customInt
+		expected []customInt
 	}{
-		{[]int{}, 0, []int{}},
-		{[]int{}, 1, []int{}},
-		{[]int{1}, 1, []int{}},
-		{[]int{1}, 2, []int{1}},
-		{[]int{1, 2, 3}, 1, []int{2, 3}},
-		{[]int{1, 2, 3}, 4, []int{1, 2, 3}},
-		{[]int{1, 2, 3}, 0, []int{1, 2, 3}},
+		{[]customInt{}, 0, []customInt{}},
+		{[]customInt{}, 1, []customInt{}},
+		{[]customInt{1}, 1, []customInt{}},
+		{[]customInt{1}, 2, []customInt{1}},
+		{[]customInt{1, 2, 3}, 1, []customInt{2, 3}},
+		{[]customInt{1, 2, 3}, 4, []customInt{1, 2, 3}},
+		{[]customInt{1, 2, 3}, 0, []customInt{1, 2, 3}},
 	}
 
-	for _, testCase := range testCasesInt {
+	for _, testCase := range testCasesCustomInt {
 		actual := RemoveElementFromList(testCase.list, testCase.element)
 		assert.Equal(t, testCase.expected, actual, "For list %v and element %s", testCase.list, testCase.element)
 	}
