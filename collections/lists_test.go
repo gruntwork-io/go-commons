@@ -113,26 +113,26 @@ func TestBatchListIntoGroupsOf(t *testing.T) {
 			[]string{"macaroni", "gentoo", "magellanic", "adelie", "little", "king", "emperor"},
 			2,
 			[][]string{
-				[]string{"macaroni", "gentoo"},
-				[]string{"magellanic", "adelie"},
-				[]string{"little", "king"},
-				[]string{"emperor"},
+				{"macaroni", "gentoo"},
+				{"magellanic", "adelie"},
+				{"little", "king"},
+				{"emperor"},
 			},
 		},
 		{
 			[]string{"macaroni", "gentoo", "magellanic", "adelie", "king", "emperor"},
 			2,
 			[][]string{
-				[]string{"macaroni", "gentoo"},
-				[]string{"magellanic", "adelie"},
-				[]string{"king", "emperor"},
+				{"macaroni", "gentoo"},
+				{"magellanic", "adelie"},
+				{"king", "emperor"},
 			},
 		},
 		{
 			[]string{"macaroni", "gentoo", "magellanic"},
 			5,
 			[][]string{
-				[]string{"macaroni", "gentoo", "magellanic"},
+				{"macaroni", "gentoo", "magellanic"},
 			},
 		},
 		{
@@ -171,26 +171,26 @@ func TestBatchListIntoGroupsOf(t *testing.T) {
 			[]int{1, 2, 3, 4, 5, 6, 7},
 			2,
 			[][]int{
-				[]int{1, 2},
-				[]int{3, 4},
-				[]int{5, 6},
-				[]int{7},
+				{1, 2},
+				{3, 4},
+				{5, 6},
+				{7},
 			},
 		},
 		{
 			[]int{1, 2, 3, 4, 5, 6},
 			2,
 			[][]int{
-				[]int{1, 2},
-				[]int{3, 4},
-				[]int{5, 6},
+				{1, 2},
+				{3, 4},
+				{5, 6},
 			},
 		},
 		{
 			[]int{1, 2, 3},
 			5,
 			[][]int{
-				[]int{1, 2, 3},
+				{1, 2, 3},
 			},
 		},
 		{
