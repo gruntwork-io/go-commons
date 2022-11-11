@@ -4,34 +4,37 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/maps"
 )
 
 const (
 	DefaultKeyValueStringSliceFormat = "%s=%s"
 )
 
-// Merge all the maps into one. Sadly, Go has no generics, so this is only defined for string to interface maps.
-func MergeMaps(maps ...map[string]interface{}) map[string]interface{} {
-	out := map[string]interface{}{}
+// MergeMaps merges all the maps into one
+func MergeMaps[K comparable, V any](mapsToMerge ...map[K]V) map[K]V {
+	out := map[K]V{}
 
-	for _, currMap := range maps {
-		for key, value := range currMap {
-			out[key] = value
-		}
+	for _, currMap := range mapsToMerge {
+		maps.Copy(out, currMap)
 	}
 
 	return out
 }
 
-// Return the keys for the given map, sorted alphabetically
-func Keys(m map[string]string) []string {
-	out := []string{}
+// Keys returns the keys for the given map, sorted
+func Keys[K constraints.Ordered, V any](m map[K]V) []K {
+	out := []K{}
 
-	for key, _ := range m {
+	for key := range m {
 		out = append(out, key)
 	}
 
-	sort.Strings(out)
+	sort.Slice(out, func(i, j int) bool {
+		return out[i] < out[j]
+	})
 
 	return out
 }
@@ -42,8 +45,8 @@ func KeyValueStringSlice(m map[string]string) []string {
 }
 
 // KeyValueStringSliceWithFormat returns a string slice using the specified format, sorted alphabetically.
-// The format should consist of at least two '%s' string verbs.
-func KeyValueStringSliceWithFormat(m map[string]string, format string) []string {
+// The format should consist of at least two format specifiers.
+func KeyValueStringSliceWithFormat[K comparable, V any](m map[K]V, format string) []string {
 	out := []string{}
 
 	for key, value := range m {
