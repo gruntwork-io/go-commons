@@ -31,7 +31,7 @@ func MakeCopyOfList[S ~[]E, E comparable](list S) S {
 
 // BatchListIntoGroupsOf will group the provided slice into groups of size n, with the last of being truncated to
 // the remaining count of elements.  Returns nil if n is <= 0
-func BatchListIntoGroupsOf[S ~[]E, E comparable](slice S, batchSize int) []S {
+func BatchListIntoGroupsOf[S ~[]E, E any](slice S, batchSize int) []S {
 	if batchSize <= 0 {
 		return nil
 	}
