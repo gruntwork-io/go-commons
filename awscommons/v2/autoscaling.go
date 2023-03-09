@@ -139,7 +139,7 @@ func waitForCapacity(
 	logger.Infof("Waiting for ASG %s to reach desired capacity.", asgName)
 
 	err := retry.DoWithRetry(
-		logger.Logger,
+		logger,
 		"Waiting for desired capacity to be reached.",
 		maxRetries, sleepBetweenRetries,
 		func() error {
