@@ -14,12 +14,14 @@ const defaultErrorExitCode = 1
 const debugEnvironmentVarName = "GRUNTWORK_DEBUG"
 
 // Wrapper around cli.NewApp that sets the help text printer.
-func NewApp() *cli.App {
+func NewApp(name string, version string) *cli.App {
 	cli.HelpPrinter = WrappedHelpPrinter
 	cli.AppHelpTemplate = CLI_APP_HELP_TEMPLATE
 	cli.CommandHelpTemplate = CLI_COMMAND_HELP_TEMPLATE
 	cli.SubcommandHelpTemplate = CLI_APP_HELP_TEMPLATE
 	app := cli.NewApp()
+	app.Name = name
+	app.Version = version
 	return app
 }
 
@@ -29,10 +31,12 @@ func RunApp(app *cli.App) {
 		// Do nothing. We just need to override this function, as the default value calls os.Exit, which
 		// kills the app (or any automated test) dead in its tracks.
 	}
-
-	defer errors.Recover(checkForErrorsAndExit)
+	checkErrs := func(e error) {
+		checkForErrorsAndExit(e, app)
+	}
+	defer errors.Recover(checkErrs)
 	err := app.Run(os.Args)
-	checkForErrorsAndExit(err)
+	checkForErrorsAndExit(err, app)
 }
 
 // If there is an error, display it in the console and exit with a non-zero exit code. Otherwise, exit 0.
