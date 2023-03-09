@@ -9,25 +9,30 @@ import (
 var globalLogLevel = logrus.InfoLevel
 var globalLogLevelLock = sync.Mutex{}
 
+var globalLogFormatter = "text"
+var globalLogFormatterLock = sync.Mutex{}
+
 func GetProjectLogger() *logrus.Entry {
 	logger := GetLogger("")
 	return logger.WithField("name", "go-commons")
 }
 
 // Create a new logger with the given name
-func GetLogger(name string) *logrus.Logger {
+func GetLogger(name string) *logrus.Entry {
 	logger := logrus.New()
 
 	logger.Level = globalLogLevel
 
-	logger.Formatter = &TextFormatterWithBinName{
-		Name: name,
-		TextFormatter: logrus.TextFormatter{
-			FullTimestamp: true,
-		},
-	}
+	if globalLogFormatter == "json" {
+		logger.Formatter = &logrus.JSONFormatter{}
 
-	return logger
+	} else {
+		logger.Formatter = &logrus.TextFormatter{
+			FullTimestamp: true,
+		}
+	}
+	return logger.WithField("binary", name)
+
 }
 
 // Set the log level. Note: this ONLY affects loggers created using the GetLogger function AFTER this function has been
@@ -39,4 +44,12 @@ func SetGlobalLogLevel(level logrus.Level) {
 	globalLogLevelLock.Lock()
 
 	globalLogLevel = level
+}
+
+// Set the log format. Note: this ONLY affects loggers created using the GetLogger function AFTER this function has been
+// called. Therefore, you need to call this as early in the life of your CLI app as possible!
+func SetGlobalLogFormatter(formatter string) {
+	defer globalLogFormatterLock.Unlock()
+	globalLogFormatterLock.Lock()
+	globalLogFormatter = formatter
 }
