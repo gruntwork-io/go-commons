@@ -53,19 +53,16 @@ import (
 func main() {
       // Create a new CLI app. This will return a urfave/cli App with some
       // common initialization.
-      app := entrypoint.NewApp()
+      // Set the version number from your app from the Version variable that is passed in at build time in `version` package
+      // for more understanding see github.com/gruntwork-io/go-commons/version
+      app := entrypoint.NewApp("my-app-name", version.GetVersion())
 
-      app.Name = "my-app"
       app.Authors = []*cli.Author{
             {
                 Name: "Gruntwork",
                 Email: "www.gruntwork.io",
             },
       }
-
-      // Set the version number from your app from the Version variable that is passed in at build time in `version` package
-      // for more understanding see github.com/gruntwork-io/go-commons/version
-      app.Version = version.GetVersion()
 
       app.Action = func(cliContext *cli.Context) error {
         // ( fill in your app details)
@@ -118,7 +115,7 @@ variety of external systems (e.g. syslog, airbrake, papertrail), and even hooks 
 To get a Logger, call the `logging.GetLogger` method:
 
 ```go
-logger := logging.GetLogger("my-app")
+logger := logging.GetLogger("my-app", "v0.0.1")
 logger.Info("Something happened!")
 ```
 
@@ -130,6 +127,13 @@ logging.SetGlobalLogLevel(logrus.DebugLevel)
 
 Note that this ONLY affects loggers created using the `GetLogger` function **AFTER** you call `SetGlobalLogLevel`, so
 you need to call this as early in the life of your CLI app as possible!
+
+To change the logging format globally, call the `SetGlobalLogFormatter` function:
+
+```go
+//Valid options are "json" or "text"
+logging.SetGlobalLogFormatter("json")
+```
 
 ### shell
 
