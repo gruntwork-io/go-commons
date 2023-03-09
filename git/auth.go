@@ -34,7 +34,7 @@ type CacheCredentialOptions struct {
 
 // ConfigureForceHTTPS configures git to force usage of https endpoints instead of SSH based endpoints for the three
 // primary VCS platforms (GitHub, GitLab, BitBucket).
-func ConfigureForceHTTPS(logger *logrus.Logger) error {
+func ConfigureForceHTTPS(logger *logrus.Entry) error {
 	opts := shell.NewShellOptions()
 	if logger != nil {
 		opts.Logger = logger
@@ -71,7 +71,7 @@ func ConfigureForceHTTPS(logger *logrus.Logger) error {
 // NOTE: this configures the cache credential helper globally, with a default timeout of 1 hour. If you want more
 // control over the configuration, use the ConfigureCacheCredentialsHelper and StoreCacheCredentials functions directly.
 func ConfigureHTTPSAuth(
-	logger *logrus.Logger,
+	logger *logrus.Entry,
 	gitUsername string,
 	gitOauthToken string,
 	vcsHost string,
@@ -92,7 +92,7 @@ func ConfigureHTTPSAuth(
 
 // ConfigureCacheCredentialsHelper configures git globally to use the cache credentials helper for authentication based
 // on the provided options configuration.
-func ConfigureCacheCredentialsHelper(logger *logrus.Logger, options CacheCredentialOptions) error {
+func ConfigureCacheCredentialsHelper(logger *logrus.Entry, options CacheCredentialOptions) error {
 	shellOpts := shell.NewShellOptions()
 	if logger != nil {
 		shellOpts.Logger = logger
@@ -144,7 +144,7 @@ func ConfigureCacheCredentialsHelper(logger *logrus.Logger, options CacheCredent
 // StoreCacheCredentials stores the given git credentials for the vcs host and path pair to the git credential-cache
 // helper.
 func StoreCacheCredentials(
-	logger *logrus.Logger,
+	logger *logrus.Entry,
 	gitUsername string,
 	gitOauthToken string,
 	vcsHost string,

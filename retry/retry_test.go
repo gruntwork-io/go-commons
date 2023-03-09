@@ -49,7 +49,7 @@ func TestDoWithRetry(t *testing.T) {
 			t.Parallel()
 
 			actualOutput, err := DoWithRetryInterface(
-				logging.GetLogger("test"),
+				logging.GetLogger("test", ""),
 				testCase.description,
 				testCase.maxRetries,
 				1*time.Millisecond,

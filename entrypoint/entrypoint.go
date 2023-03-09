@@ -53,9 +53,9 @@ func logError(err error, app *cli.App) {
 	if err != nil {
 		errWithoutStackTrace := errors.Unwrap(err)
 		if isDebugMode {
-			logging.GetLogger(app.Name).WithError(err).Error(errors.PrintErrorWithStackTrace(err))
+			logging.GetLogger(app.Name, app.Version).WithError(err).Error(errors.PrintErrorWithStackTrace(err))
 		} else {
-			logging.GetLogger(app.Name).Error(errWithoutStackTrace)
+			logging.GetLogger(app.Name, app.Version).Error(errWithoutStackTrace)
 		}
 	}
 }

@@ -13,12 +13,12 @@ var globalLogFormatter = "text"
 var globalLogFormatterLock = sync.Mutex{}
 
 func GetProjectLogger() *logrus.Entry {
-	logger := GetLogger("")
+	logger := GetLogger("", "")
 	return logger.WithField("name", "go-commons")
 }
 
 // Create a new logger with the given name
-func GetLogger(name string) *logrus.Entry {
+func GetLogger(name string, version string) *logrus.Entry {
 	logger := logrus.New()
 
 	logger.Level = globalLogLevel
@@ -31,7 +31,7 @@ func GetLogger(name string) *logrus.Entry {
 			FullTimestamp: true,
 		}
 	}
-	return logger.WithField("binary", name)
+	return logger.WithField("binary", name).WithField("version", version)
 
 }
 

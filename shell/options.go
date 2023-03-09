@@ -16,7 +16,7 @@ type ShellOptions struct {
 func NewShellOptions() *ShellOptions {
 	return &ShellOptions{
 		NonInteractive: false,
-		Logger:         logging.GetLogger(""),
+		Logger:         logging.GetLogger("", ""),
 		WorkingDir:     ".",
 		SensitiveArgs:  false,
 		Env:            map[string]string{},
