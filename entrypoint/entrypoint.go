@@ -1,7 +1,6 @@
 package entrypoint
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -52,7 +51,7 @@ func logError(err error) {
 		if isDebugMode {
 			logging.GetLogger("").WithError(err).Error(errors.PrintErrorWithStackTrace(err))
 		} else {
-			fmt.Fprintf(os.Stderr, "ERROR: %s\n", errWithoutStackTrace)
+			logging.GetLogger("").Error(errWithoutStackTrace)
 		}
 	}
 }
