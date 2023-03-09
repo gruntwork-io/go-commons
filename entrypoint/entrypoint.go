@@ -37,21 +37,21 @@ func RunApp(app *cli.App) {
 
 // If there is an error, display it in the console and exit with a non-zero exit code. Otherwise, exit 0.
 // Note that if the GRUNTWORK_DEBUG environment variable is set, this will print out the stack trace.
-func checkForErrorsAndExit(err error) {
-	logError(err)
+func checkForErrorsAndExit(err error, app *cli.App) {
+	logError(err, app)
 	exitCode := getExitCode(err)
 	os.Exit(exitCode)
 }
 
 // logError will output an error message to stderr. This will output the stack trace if we are in debug mode.
-func logError(err error) {
+func logError(err error, app *cli.App) {
 	isDebugMode := os.Getenv(debugEnvironmentVarName) != ""
 	if err != nil {
 		errWithoutStackTrace := errors.Unwrap(err)
 		if isDebugMode {
-			logging.GetLogger("").WithError(err).Error(errors.PrintErrorWithStackTrace(err))
+			logging.GetLogger(app.Name).WithError(err).Error(errors.PrintErrorWithStackTrace(err))
 		} else {
-			logging.GetLogger("").Error(errWithoutStackTrace)
+			logging.GetLogger(app.Name).Error(errWithoutStackTrace)
 		}
 	}
 }
