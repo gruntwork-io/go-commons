@@ -129,7 +129,7 @@ func TestSensitiveArgsTrueHidesOnRunShellCommand(t *testing.T) {
 
 	buffer := bytes.NewBufferString("")
 	logger := logging.GetLogger("")
-	logger.Out = buffer
+	logger.Logger.Out = buffer
 	options := NewShellOptions()
 	options.SensitiveArgs = true
 	options.Logger = logger
@@ -145,7 +145,7 @@ func TestSensitiveArgsFalseShowsOnRunShellCommand(t *testing.T) {
 
 	buffer := bytes.NewBufferString("")
 	logger := logging.GetLogger("")
-	logger.Out = buffer
+	logger.Logger.Out = buffer
 	options := NewShellOptions()
 	options.Logger = logger
 
@@ -160,7 +160,7 @@ func TestSensitiveArgsTrueHidesOnRunShellCommandAndGetOutput(t *testing.T) {
 
 	buffer := bytes.NewBufferString("")
 	logger := logging.GetLogger("")
-	logger.Out = buffer
+	logger.Logger.Out = buffer
 	options := NewShellOptions()
 	options.SensitiveArgs = true
 	options.Logger = logger
@@ -177,7 +177,7 @@ func TestSensitiveArgsFalseShowsOnRunShellCommandAndGetOutput(t *testing.T) {
 
 	buffer := bytes.NewBufferString("")
 	logger := logging.GetLogger("")
-	logger.Out = buffer
+	logger.Logger.Out = buffer
 	options := NewShellOptions()
 	options.Logger = logger
 

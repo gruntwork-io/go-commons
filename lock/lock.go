@@ -41,7 +41,7 @@ type Options struct {
 	// The value for how long AcquireLock will sleep for between retries to get the lock
 	SleepBetweenRetries time.Duration
 	// The logger to use for the lock
-	Logger *logrus.Logger
+	Logger *logrus.Entry
 
 	// Custom session to use to authenticate to AWS in the SDK. If nil, constructs the session based on the default
 	// authentication chain in the SDK.

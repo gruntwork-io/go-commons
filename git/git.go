@@ -7,7 +7,7 @@ import (
 )
 
 // Clone runs git clone to clone the specified repository into the given target directory.
-func Clone(logger *logrus.Logger, repo string, targetDir string) error {
+func Clone(logger *logrus.Entry, repo string, targetDir string) error {
 	if !files.IsDir(targetDir) {
 		return TargetDirectoryNotExistsErr{dirPath: targetDir}
 	}
@@ -20,7 +20,7 @@ func Clone(logger *logrus.Logger, repo string, targetDir string) error {
 }
 
 // Checkout checks out the given ref for the repo cloned in the target directory.
-func Checkout(logger *logrus.Logger, ref string, targetDir string) error {
+func Checkout(logger *logrus.Entry, ref string, targetDir string) error {
 	if !files.IsDir(targetDir) {
 		return TargetDirectoryNotExistsErr{dirPath: targetDir}
 	}
