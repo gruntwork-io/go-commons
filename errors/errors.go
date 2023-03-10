@@ -87,7 +87,7 @@ func Recover(onPanic func(cause error)) {
 
 // Use this to wrap every command you add to *cli.App to handle panics by logging them with a stack trace and returning
 // an error up the chain.
-func WithPanicHandling(action func(*cli.Context) error) func(*cli.Context) error {
+func WithPanicHandling(action func(c *cli.Context) error) func(c *cli.Context) error {
 	return func(context *cli.Context) (err error) {
 		defer Recover(func(cause error) {
 			err = cause

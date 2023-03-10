@@ -20,7 +20,7 @@ func TestAcquireLockWithRetries(t *testing.T) {
 		LockString:          "test-dynamodb-lock-string-" + random.UniqueId(),
 		MaxRetries:          2,
 		SleepBetweenRetries: 1 * time.Second,
-		Logger:              logging.GetLogger("TestAcquireLockWithRetries"),
+		Logger:              logging.GetLogger("TestAcquireLockWithRetries", ""),
 	}
 
 	defer assertLockReleased(t, &options)

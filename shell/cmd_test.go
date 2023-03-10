@@ -128,8 +128,8 @@ func TestSensitiveArgsTrueHidesOnRunShellCommand(t *testing.T) {
 	t.Parallel()
 
 	buffer := bytes.NewBufferString("")
-	logger := logging.GetLogger("")
-	logger.Out = buffer
+	logger := logging.GetLogger("", "")
+	logger.Logger.Out = buffer
 	options := NewShellOptions()
 	options.SensitiveArgs = true
 	options.Logger = logger
@@ -144,8 +144,8 @@ func TestSensitiveArgsFalseShowsOnRunShellCommand(t *testing.T) {
 	t.Parallel()
 
 	buffer := bytes.NewBufferString("")
-	logger := logging.GetLogger("")
-	logger.Out = buffer
+	logger := logging.GetLogger("", "")
+	logger.Logger.Out = buffer
 	options := NewShellOptions()
 	options.Logger = logger
 
@@ -159,8 +159,8 @@ func TestSensitiveArgsTrueHidesOnRunShellCommandAndGetOutput(t *testing.T) {
 	t.Parallel()
 
 	buffer := bytes.NewBufferString("")
-	logger := logging.GetLogger("")
-	logger.Out = buffer
+	logger := logging.GetLogger("", "")
+	logger.Logger.Out = buffer
 	options := NewShellOptions()
 	options.SensitiveArgs = true
 	options.Logger = logger
@@ -176,8 +176,8 @@ func TestSensitiveArgsFalseShowsOnRunShellCommandAndGetOutput(t *testing.T) {
 	t.Parallel()
 
 	buffer := bytes.NewBufferString("")
-	logger := logging.GetLogger("")
-	logger.Out = buffer
+	logger := logging.GetLogger("", "")
+	logger.Logger.Out = buffer
 	options := NewShellOptions()
 	options.Logger = logger
 

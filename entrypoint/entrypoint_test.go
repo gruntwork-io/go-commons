@@ -94,10 +94,8 @@ func TestEntrypointNewAppCommandHelpPrinterHonorsLineWidthVar(t *testing.T) {
 func noop(c *cli.Context) error { return nil }
 
 func createSampleApp() *cli.App {
-	app := NewApp()
-	app.Name = "houston"
+	app := NewApp("houston", "v0.0.6")
 	app.HelpName = "houston"
-	app.Version = "v0.0.6"
 	app.Description = `A CLI tool for interacting with Gruntwork Houston that you can use to authenticate to AWS on the CLI and to SSH to your EC2 Instances.`
 
 	configFlag := cli.StringFlag{

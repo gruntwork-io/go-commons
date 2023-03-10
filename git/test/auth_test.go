@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	logger = logging.GetLogger("testlogger")
+	logger = logging.GetLogger("testlogger", "")
 )
 
 // NOTE: All these tests should be run in the provided docker environment to avoid polluting the local git configuration

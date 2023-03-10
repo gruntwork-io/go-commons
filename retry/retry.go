@@ -11,7 +11,7 @@ import (
 // If it returns any other type of error, sleep for sleepBetweenRetries and try again, up to a maximum of
 // maxRetries retries. If maxRetries is exceeded, return a MaxRetriesExceeded error.
 func DoWithRetry(
-	logger *logrus.Logger,
+	logger *logrus.Entry,
 	actionDescription string,
 	maxRetries int,
 	sleepBetweenRetries time.Duration,
@@ -31,7 +31,7 @@ func DoWithRetry(
 // return that error immediately. If it returns any other type of error, sleep for sleepBetweenRetries and try again, up
 // to a maximum of maxRetries retries. If maxRetries is exceeded, return a MaxRetriesExceeded error.
 func DoWithRetryInterface(
-	logger *logrus.Logger,
+	logger *logrus.Entry,
 	actionDescription string,
 	maxRetries int,
 	sleepBetweenRetries time.Duration,

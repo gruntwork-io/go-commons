@@ -103,7 +103,7 @@ func runShellCommand(options *ShellOptions, streamOutput bool, command string, a
 	}
 
 	output, err := readStdoutAndStderr(
-		options.Logger,
+		options.Logger.Logger,
 		streamOutput,
 		stdout,
 		stderr,

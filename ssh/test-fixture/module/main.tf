@@ -25,7 +25,7 @@ provider "aws" {
 
 resource "aws_instance" "example_public" {
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
+  instance_type          = "t3.micro"
   vpc_security_group_ids = [aws_security_group.example.id]
   key_name               = var.key_pair_name
 
@@ -41,7 +41,7 @@ resource "aws_instance" "example_public" {
 
 resource "aws_instance" "example_private" {
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
+  instance_type          = "t3.micro"
   vpc_security_group_ids = [aws_security_group.example_vpc_restricted.id]
   key_name               = var.key_pair_name
 
@@ -57,7 +57,7 @@ resource "aws_instance" "example_private" {
 
 resource "aws_instance" "example_private_restricted" {
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
+  instance_type          = "t3.micro"
   vpc_security_group_ids = [aws_security_group.example_restricted.id]
   key_name               = var.key_pair_name
 

@@ -1,7 +1,6 @@
 package entrypoint
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -15,12 +14,14 @@ const defaultErrorExitCode = 1
 const debugEnvironmentVarName = "GRUNTWORK_DEBUG"
 
 // Wrapper around cli.NewApp that sets the help text printer.
-func NewApp() *cli.App {
+func NewApp(name string, version string) *cli.App {
 	cli.HelpPrinter = WrappedHelpPrinter
 	cli.AppHelpTemplate = CLI_APP_HELP_TEMPLATE
 	cli.CommandHelpTemplate = CLI_COMMAND_HELP_TEMPLATE
 	cli.SubcommandHelpTemplate = CLI_APP_HELP_TEMPLATE
 	app := cli.NewApp()
+	app.Name = name
+	app.Version = version
 	return app
 }
 
@@ -30,29 +31,31 @@ func RunApp(app *cli.App) {
 		// Do nothing. We just need to override this function, as the default value calls os.Exit, which
 		// kills the app (or any automated test) dead in its tracks.
 	}
-
-	defer errors.Recover(checkForErrorsAndExit)
+	checkErrs := func(e error) {
+		checkForErrorsAndExit(e, app)
+	}
+	defer errors.Recover(checkErrs)
 	err := app.Run(os.Args)
-	checkForErrorsAndExit(err)
+	checkForErrorsAndExit(err, app)
 }
 
 // If there is an error, display it in the console and exit with a non-zero exit code. Otherwise, exit 0.
 // Note that if the GRUNTWORK_DEBUG environment variable is set, this will print out the stack trace.
-func checkForErrorsAndExit(err error) {
-	logError(err)
+func checkForErrorsAndExit(err error, app *cli.App) {
+	logError(err, app)
 	exitCode := getExitCode(err)
 	os.Exit(exitCode)
 }
 
 // logError will output an error message to stderr. This will output the stack trace if we are in debug mode.
-func logError(err error) {
+func logError(err error, app *cli.App) {
 	isDebugMode := os.Getenv(debugEnvironmentVarName) != ""
 	if err != nil {
 		errWithoutStackTrace := errors.Unwrap(err)
 		if isDebugMode {
-			logging.GetLogger("").WithError(err).Error(errors.PrintErrorWithStackTrace(err))
+			logging.GetLogger(app.Name, app.Version).WithError(err).Error(errors.PrintErrorWithStackTrace(err))
 		} else {
-			fmt.Fprintf(os.Stderr, "ERROR: %s\n", errWithoutStackTrace)
+			logging.GetLogger(app.Name, app.Version).Error(errWithoutStackTrace)
 		}
 	}
 }
