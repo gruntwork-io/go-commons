@@ -14,8 +14,7 @@ type MixpanelTelemetryTracker struct {
 }
 
 /*
-	Helper func for combining two maps
-
+Helper func for combining two maps
 This is used to combine our baseline props sent for all events
 with event props given from a caller
 */
