@@ -11,6 +11,7 @@ type MixpanelTelemetryTracker struct {
 	clientId string
 	client   *mixpanel.Client
 	appName  string
+	version  string
 }
 
 /*
@@ -33,6 +34,7 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 		"timestamp": time.Now().Unix(),
 		"context":   m.appName,
 		"command":   eventContext.command,
+		"version":   m.version,
 	}
 
 	// Combine our baseline props that we send for _ALL_ events with the passed in props from the event
@@ -45,7 +47,7 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 	}
 }
 
-func NewMixPanelTelemetryClient(clientId string, appName string) MixpanelTelemetryTracker {
+func NewMixPanelTelemetryClient(clientId string, appName string, version string) MixpanelTelemetryTracker {
 	mixpanelClient := mixpanel.New(clientId)
-	return MixpanelTelemetryTracker{client: mixpanelClient, clientId: clientId, appName: appName}
+	return MixpanelTelemetryTracker{client: mixpanelClient, clientId: clientId, appName: appName, version: version}
 }
