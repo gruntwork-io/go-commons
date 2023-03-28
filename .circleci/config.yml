@@ -21,5 +21,6 @@ workflows:
             tags:
               only: /^v.*/
           context:
-            - Gruntwork Admin
-            - Gruntwork Clients Test Github App
+            - AWS__PHXDEVOPS__circle-ci-test
+            - GITHUB__PAT__gruntwork-ci
+            - GITHUB__APP__gruntwork-clients-refarch-deployer-test
