@@ -7,5 +7,4 @@ type telemetryTracker interface {
 type EventContext struct {
 	Command   string
 	EventName string
-	RunId     string
 }
