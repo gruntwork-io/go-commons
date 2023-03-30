@@ -24,6 +24,7 @@ require (
 	golang.org/x/crypto v0.1.0
 	golang.org/x/exp v0.0.0-20221106115401-f9659909a136
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
+	vizzlo.com/mixpanel v1.2.0
 )
 
 require (
@@ -118,5 +119,4 @@ require (
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.0.3 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
-	vizzlo.com/mixpanel v1.2.0 // indirect
 )

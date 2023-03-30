@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"github.com/google/uuid"
 	"log"
 	"time"
 
@@ -12,6 +13,7 @@ type MixpanelTelemetryTracker struct {
 	client   *mixpanel.Client
 	appName  string
 	version  string
+	runId    string
 }
 
 /*
@@ -33,14 +35,14 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 	baseProps := map[string]interface{}{
 		"timestamp": time.Now().Unix(),
 		"context":   m.appName,
-		"command":   eventContext.command,
+		"command":   eventContext.Command,
 		"version":   m.version,
 	}
 
 	// Combine our baseline props that we send for _ALL_ events with the passed in props from the event
 	trackProps := mergeMaps(baseProps, eventProps)
 
-	err := m.client.Track(m.clientId, eventContext.eventName, trackProps)
+	err := m.client.Track(m.runId, eventContext.EventName, trackProps)
 
 	if err != nil {
 		log.Fatal(err)
@@ -49,5 +51,11 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 
 func NewMixPanelTelemetryClient(clientId string, appName string, version string) MixpanelTelemetryTracker {
 	mixpanelClient := mixpanel.New(clientId)
-	return MixpanelTelemetryTracker{client: mixpanelClient, clientId: clientId, appName: appName, version: version}
+	return MixpanelTelemetryTracker{
+		client:   mixpanelClient,
+		clientId: clientId,
+		appName:  appName,
+		version:  version,
+		runId:    uuid.New().String(),
+	}
 }
