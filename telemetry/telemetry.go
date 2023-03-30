@@ -5,6 +5,6 @@ type telemetryTracker interface {
 }
 
 type EventContext struct {
-	command   string
-	eventName string
+	Command   string
+	EventName string
 }
