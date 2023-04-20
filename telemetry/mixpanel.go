@@ -45,7 +45,7 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 	err := m.client.Track(m.runId, eventContext.EventName, trackProps)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }
 
