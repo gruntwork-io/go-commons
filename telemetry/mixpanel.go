@@ -41,10 +41,11 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 
 	// Combine our baseline props that we send for _ALL_ events with the passed in props from the event
 	trackProps := mergeMaps(baseProps, eventProps)
-
+	
 	err := m.client.Track(m.runId, eventContext.EventName, trackProps)
 
 	if err != nil {
+		log.Println(trackProps)
 		log.Println(err.Error())
 	}
 }
