@@ -1,4 +1,4 @@
-module github.com/gruntwork-io/go-commons
+module github.com/princetonidentity-gruntwork/go-commons
 
 go 1.18
 
@@ -15,7 +15,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/go-errors/errors v1.4.2
 	github.com/google/go-github/v44 v44.1.0
-	github.com/gruntwork-io/terratest v0.41.0
+	github.com/princetonidentity-gruntwork/terratest v0.41.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattn/go-zglob v0.0.3
 	github.com/sirupsen/logrus v1.8.1
