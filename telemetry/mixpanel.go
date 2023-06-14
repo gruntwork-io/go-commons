@@ -1,19 +1,21 @@
 package telemetry
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/google/uuid"
 	"log"
+	"net/http"
 	"time"
-
-	"vizzlo.com/mixpanel"
 )
 
+const ForwarderUrl = "https://t.dogfood-dev.com/"
+
 type MixpanelTelemetryTracker struct {
-	clientId string
-	client   *mixpanel.Client
-	appName  string
-	version  string
-	runId    string
+	client  *http.Client
+	appName string
+	version string
+	runId   string
 }
 
 /*
@@ -42,20 +44,38 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 	// Combine our baseline props that we send for _ALL_ events with the passed in props from the event
 	trackProps := mergeMaps(baseProps, eventProps)
 
-	err := m.client.Track(m.runId, eventContext.EventName, trackProps)
-
+	request := map[string]interface{}{
+		"id":         m.runId,
+		"event":      eventContext.EventName,
+		"eventProps": trackProps,
+	}
+	jsonStr, err := json.Marshal(request)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	req, err := http.NewRequest("POST", ForwarderUrl, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := m.client.Do(req)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	err = resp.Body.Close()
 	if err != nil {
 		log.Println(err.Error())
 	}
 }
 
-func NewMixPanelTelemetryClient(clientId string, appName string, version string) MixpanelTelemetryTracker {
-	mixpanelClient := mixpanel.New(clientId)
+func NewMixPanelTelemetryClient(appName string, version string) MixpanelTelemetryTracker {
 	return MixpanelTelemetryTracker{
-		client:   mixpanelClient,
-		clientId: clientId,
-		appName:  appName,
-		version:  version,
-		runId:    uuid.New().String(),
+		client:  &http.Client{},
+		appName: appName,
+		version: version,
+		runId:   uuid.New().String(),
 	}
 }
