@@ -9,10 +9,9 @@ import (
 	"time"
 )
 
-const ForwarderUrl = "https://t.dogfood-dev.com/"
-
 type MixpanelTelemetryTracker struct {
 	client  *http.Client
+	url     string
 	appName string
 	version string
 	runId   string
@@ -54,7 +53,7 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 		log.Println(err.Error())
 		return
 	}
-	req, err := http.NewRequest("POST", ForwarderUrl, bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest("POST", m.url, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		log.Println(err.Error())
 		return
@@ -71,9 +70,10 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 	}
 }
 
-func NewMixPanelTelemetryClient(appName string, version string) MixpanelTelemetryTracker {
+func NewMixPanelTelemetryClient(url string, appName string, version string) MixpanelTelemetryTracker {
 	return MixpanelTelemetryTracker{
 		client:  &http.Client{},
+		url:     url,
 		appName: appName,
 		version: version,
 		runId:   uuid.New().String(),
