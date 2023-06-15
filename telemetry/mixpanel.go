@@ -53,13 +53,7 @@ func (m MixpanelTelemetryTracker) TrackEvent(eventContext EventContext, eventPro
 		log.Println(err.Error())
 		return
 	}
-	req, err := http.NewRequest("POST", m.url, bytes.NewBuffer(jsonStr))
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := m.client.Do(req)
+	resp, err := m.client.Post(m.url, "application/json", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		log.Println(err.Error())
 		return
