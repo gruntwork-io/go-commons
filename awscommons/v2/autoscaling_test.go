@@ -59,6 +59,7 @@ func TestSetAsgCapacityDeploysNewInstances(t *testing.T) {
 	require.NoError(t, waitForCapacity(opts, name, 40, 15*time.Second))
 
 	asg, err = GetAsgByName(opts, name)
+	require.NoError(t, err)
 	allInstances := asg.Instances
 	require.Equal(t, len(allInstances), len(existingInstances)+1)
 
