@@ -7,6 +7,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// Errorf creates a new error and wraps in an Error type that contains the stack trace.
+func Errorf(message string, args ...interface{}) error {
+	err := fmt.Errorf(message, args...)
+	return goerrors.Wrap(err, 1)
+}
+
 // If this error is returned, the program should exit with the given exit code.
 type ErrorWithExitCode struct {
 	Err      error

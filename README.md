@@ -22,6 +22,7 @@ This repo contains the following packages:
 * ssh
 * retry
 * awscommons
+* env
 
 Each of these packages is described below.
 
@@ -156,6 +157,9 @@ This package contains routines for interacting with AWS. Meant to provide high l
 
 Note that the routines in this package are adapted for `aws-sdk-go-v2`, not v1 (`aws-sdk-go`).
 
+### env
+
+This package contains helper methods for convenient work with environment variables.
 
 ## Running tests
 
