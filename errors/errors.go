@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 
 	goerrors "github.com/go-errors/errors"
@@ -65,18 +66,25 @@ func Unwrap(err error) error {
 	return err
 }
 
-// Convert the given error to a string, including the stack trace if available
+// PrintErrorWithStackTrace converts the given error to a string, including the deepest stack trace if available.
 func PrintErrorWithStackTrace(err error) string {
 	if err == nil {
 		return ""
 	}
 
-	switch underlyingErr := err.(type) {
-	case *goerrors.Error:
-		return underlyingErr.ErrorStack()
-	default:
-		return err.Error()
+	goerr := &goerrors.Error{Err: err}
+
+	for {
+		if err, ok := err.(*goerrors.Error); ok {
+			goerr = err
+		}
+
+		if err = errors.Unwrap(err); err == nil {
+			break
+		}
 	}
+
+	return goerr.ErrorStack()
 }
 
 // A method that tries to recover from panics, and if it succeeds, calls the given onPanic function with an error that
