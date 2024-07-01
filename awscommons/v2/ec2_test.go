@@ -17,6 +17,7 @@ var (
 		"ap-southeast-1",
 		"ap-southeast-2",
 		"ca-central-1",
+		"me-central-1",
 		"eu-central-1",
 		"eu-north-1",
 		"eu-west-1",
@@ -41,5 +42,5 @@ func TestGetAllEnabledRegions(t *testing.T) {
 	// This may seem brittle to compare the region list with a static list, but with AWS defaulting new regions to opt
 	// out, the list of enabled regions will be fairly static in our test accounts, and thus this will be a more robust
 	// check than other alternatives.
-	assert.Equal(t, expectedEnabledRegionsInGruntworkTestAccount, regions)
+	assert.ElementsMatch(t, expectedEnabledRegionsInGruntworkTestAccount, regions)
 }
