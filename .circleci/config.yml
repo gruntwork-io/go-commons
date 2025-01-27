@@ -9,8 +9,7 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 20.10.14
+      - setup_remote_docker
       - run: run-go-tests
 workflows:
   version: 2
