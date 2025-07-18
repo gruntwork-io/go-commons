@@ -1,6 +1,6 @@
 module github.com/gruntwork-io/go-commons
 
-go 1.21
+go 1.23.0
 
 require (
 	github.com/aws/aws-sdk-go v1.44.122
@@ -24,13 +24,12 @@ require (
 	github.com/urfave/cli/v2 v2.10.3
 	golang.org/x/crypto v0.31.0
 	golang.org/x/exp v0.0.0-20221106115401-f9659909a136
-	golang.org/x/oauth2 v0.8.0
+	golang.org/x/oauth2 v0.27.0
 )
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
-	cloud.google.com/go/compute v1.19.1 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v0.13.0 // indirect
 	cloud.google.com/go/storage v1.28.1 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
