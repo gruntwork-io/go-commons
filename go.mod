@@ -19,7 +19,7 @@ require (
 	github.com/gruntwork-io/terratest v0.46.16
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattn/go-zglob v0.0.3
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.8.3
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.10.3
 	golang.org/x/crypto v0.31.0
