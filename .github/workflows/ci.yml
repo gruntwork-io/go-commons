@@ -20,8 +20,6 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0 # Needed for --new-from-rev
 
       - name: Set up mise
         uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
@@ -51,11 +49,9 @@ jobs:
       - name: Download Go modules
         run: go mod download
 
-      # master predates golangci-lint, so only issues introduced by the change are reported.
+      # Pre-existing issues are held back by the baseline in .golangci.yml; see the Full Lint workflow.
       - name: Run golangci-lint
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || 'HEAD~1' }}
-        run: golangci-lint run --new-from-rev="$BASE_SHA" ./...
+        run: golangci-lint run ./...
 
       - name: Run hadolint
         if: ${{ !cancelled() }}
