@@ -1,5 +1,4 @@
 [![Maintained by Gruntwork.io](https://img.shields.io/badge/maintained%20by-gruntwork.io-%235849a6.svg)](https://gruntwork.io/?ref=repo_go-commons)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gruntwork-io/go-commons)](https://goreportcard.com/report/github.com/gruntwork-io/go-commons)
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/mod/github.com/gruntwork-io/go-commons?tab=overview)
 ![go.mod version](https://img.shields.io/github/go-mod/go-version/gruntwork-io/go-commons)
 [![CI](https://github.com/gruntwork-io/go-commons/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/gruntwork-io/go-commons/actions/workflows/ci.yml)
@@ -110,7 +109,7 @@ given path is a file or a directory, reading a file as a string, and building re
 ### logging
 
 This package contains utilities for logging from our CLI apps. Instead of using Go's built-in logging library, we are
-using [logrus](github.com/sirupsen/logrus), as it supports log levels (INFO, WARN, DEBUG, etc), structured logging
+using [logrus](https://github.com/sirupsen/logrus), as it supports log levels (INFO, WARN, DEBUG, etc), structured logging
 (making key=value pairs easier to parse), log formatting (including text and JSON), hooks to connect logging to a
 variety of external systems (e.g. syslog, airbrake, papertrail), and even hooks for automated testing.
 
