@@ -1,10 +1,10 @@
 package entrypoint
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,7 +20,7 @@ func TestStringFlagRequiredOnMissingFlag(t *testing.T) {
 		return nil
 	}
 	args := []string{"app"}
-	app.Run(args)
+	require.NoError(t, app.Run(args))
 }
 
 func TestStringFlagRequiredOnSetFlag(t *testing.T) {
@@ -34,7 +34,7 @@ func TestStringFlagRequiredOnSetFlag(t *testing.T) {
 		return nil
 	}
 	args := []string{"app", "--the-answer-to-all-problems", "42"}
-	app.Run(args)
+	require.NoError(t, app.Run(args))
 }
 
 func TestEnvironmentVarRequiredOnMissingEnvVar(t *testing.T) {
@@ -45,7 +45,7 @@ func TestEnvironmentVarRequiredOnMissingEnvVar(t *testing.T) {
 }
 
 func TestEnvironmentVarRequiredOnSetEnvVar(t *testing.T) {
-	os.Setenv("THE_ANSWER_TO_ALL_PROBLEMS", "42")
+	t.Setenv("THE_ANSWER_TO_ALL_PROBLEMS", "42")
 	value, err := EnvironmentVarRequiredE("THE_ANSWER_TO_ALL_PROBLEMS")
 	assert.Nil(t, err)
 	assert.Equal(t, value, "42")

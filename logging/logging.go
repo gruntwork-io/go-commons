@@ -25,14 +25,12 @@ func GetLogger(name string, version string) *logrus.Entry {
 
 	if globalLogFormatter == "json" {
 		logger.Formatter = &logrus.JSONFormatter{}
-
 	} else {
 		logger.Formatter = &logrus.TextFormatter{
 			FullTimestamp: true,
 		}
 	}
 	return logger.WithField("binary", name).WithField("version", version)
-
 }
 
 // Set the log level. Note: this ONLY affects loggers created using the GetLogger function AFTER this function has been

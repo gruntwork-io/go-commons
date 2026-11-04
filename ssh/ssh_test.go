@@ -66,20 +66,20 @@ func TestSSHRunCommand(t *testing.T) {
 		// instances.
 		publicHost := Host{
 			Hostname:        publicInstanceIP,
-			PrivateKey:      keyPair.KeyPair.PrivateKey,
+			PrivateKey:      keyPair.PrivateKey,
 			SSHUserName:     "ubuntu",
 			HostKeyCallback: NoOpHostKeyCallback,
 		}
 		privateHost := Host{
 			Hostname:        privateInstanceIP,
-			PrivateKey:      keyPair.KeyPair.PrivateKey,
+			PrivateKey:      keyPair.PrivateKey,
 			SSHUserName:     "ubuntu",
 			JumpHost:        &publicHost,
 			HostKeyCallback: NoOpHostKeyCallback,
 		}
 		privateRestrictedHost := Host{
 			Hostname:        privateRestrictedInstanceIP,
-			PrivateKey:      keyPair.KeyPair.PrivateKey,
+			PrivateKey:      keyPair.PrivateKey,
 			SSHUserName:     "ubuntu",
 			JumpHost:        &privateHost,
 			HostKeyCallback: NoOpHostKeyCallback,
@@ -114,8 +114,6 @@ func TestSSHRunCommand(t *testing.T) {
 		// Insulate each test case in a synchronous wrapper test so that all tests run to completion before we continue.
 		t.Run("group", func(t *testing.T) {
 			for _, testCase := range testCases {
-				// Capture the range variable so that it doesn't change when we spawn each test and the goroutine swaps.
-				testCase := testCase
 				t.Run(testCase.name, func(t *testing.T) {
 					t.Parallel()
 					testSSHToHost(t, testCase.host, testCase.description, testCase.checkIP)
@@ -125,7 +123,7 @@ func TestSSHRunCommand(t *testing.T) {
 			t.Run("publichostWithAgent", func(t *testing.T) {
 				t.Parallel()
 
-				sshAgent, err := SSHAgentWithPrivateKey(nil, keyPair.KeyPair.PrivateKey)
+				sshAgent, err := SSHAgentWithPrivateKey(nil, keyPair.PrivateKey)
 				defer sshAgent.Stop()
 				require.NoError(t, err)
 				publicHostCopy := publicHost

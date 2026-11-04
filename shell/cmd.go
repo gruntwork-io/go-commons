@@ -133,7 +133,7 @@ func CommandInstalled(command string) bool {
 // CommandInstalledE returns an error if command is not installed
 func CommandInstalledE(command string) error {
 	if commandExists := CommandInstalled(command); !commandExists {
-		err := fmt.Errorf("Command %s is not installed", command)
+		err := fmt.Errorf("command %s is not installed", command)
 		return errors.WithStackTrace(err)
 	}
 	return nil

@@ -58,7 +58,8 @@ func Unwrap(err error) error {
 		return nil
 	}
 
-	goError, isGoError := err.(*goerrors.Error)
+	// Only the outermost wrapper is unwrapped; errors.As would also strip any context wrapped around it.
+	goError, isGoError := err.(*goerrors.Error) //nolint:errorlint
 	if isGoError {
 		return goError.Err
 	}
@@ -75,7 +76,8 @@ func PrintErrorWithStackTrace(err error) string {
 	goerr := &goerrors.Error{Err: err}
 
 	for {
-		if err, ok := err.(*goerrors.Error); ok {
+		// The loop walks the chain itself, so each level is checked directly to find the deepest stack trace.
+		if err, ok := err.(*goerrors.Error); ok { //nolint:errorlint
 			goerr = err
 		}
 

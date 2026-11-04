@@ -2,13 +2,13 @@ package lock
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/terratest/modules/random"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
 	"github.com/gruntwork-io/go-commons/logging"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAcquireLockWithRetries(t *testing.T) {
@@ -24,7 +24,7 @@ func TestAcquireLockWithRetries(t *testing.T) {
 	}
 
 	defer assertLockReleased(t, &options)
-	defer ReleaseLock(&options)
+	defer func() { assert.NoError(t, ReleaseLock(&options)) }()
 
 	options.Logger.Infof("Acquiring first lock...\n")
 	err := AcquireLock(&options)

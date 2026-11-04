@@ -3,8 +3,8 @@ package ssh
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -73,10 +73,11 @@ func (s *SSHAgent) run() {
 					continue
 				}
 			} else {
-				defer c.Close()
-				go func(c io.ReadWriter) {
+				go func(c io.ReadWriteCloser) {
+					defer func() { _ = c.Close() }()
+					// ServeAgent returns io.EOF when the client disconnects.
 					err := agent.ServeAgent(s.agent, c)
-					if err != nil && s.logger != nil {
+					if !errors.Is(err, io.EOF) && s.logger != nil {
 						s.logger.Errorf("could not serve ssh agent %v", err)
 					}
 				}(c)
@@ -88,9 +89,9 @@ func (s *SSHAgent) run() {
 // Stop and clean up SSH agent
 func (s *SSHAgent) Stop() {
 	close(s.stop)
-	s.ln.Close()
+	_ = s.ln.Close()
 	<-s.stopped
-	os.RemoveAll(s.socketDir)
+	_ = os.RemoveAll(s.socketDir)
 }
 
 // Instantiates and returns an in-memory ssh agent with the given private key already added
@@ -104,7 +105,7 @@ func SSHAgentWithPrivateKey(logger *logrus.Entry, privateKey string) (*SSHAgent,
 // You should stop the agent to cleanup files afterwards by calling `defer sshAgent.Stop()`
 func SSHAgentWithPrivateKeys(logger *logrus.Entry, privateKeys []string) (*SSHAgent, error) {
 	// Instantiate a temporary SSH agent
-	socketDir, err := ioutil.TempDir("", "ssh-agent-")
+	socketDir, err := os.MkdirTemp("", "ssh-agent-")
 	if err != nil {
 		return nil, err
 	}

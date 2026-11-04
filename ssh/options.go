@@ -58,7 +58,6 @@ func (host *Host) getSSHConnectionOptions() (*sshConnectionOptions, error) {
 
 // getPort gets the port that should be used to communicate with the host
 func (h Host) getPort() int {
-
 	//If a CustomPort is not set use standard ssh port
 	if h.CustomPort == 0 {
 		return 22
@@ -140,16 +139,16 @@ type sshCloseStack struct {
 }
 
 // Push will push an item on the close stack by prepending the item to the top of the array.
-func (this *sshCloseStack) Push(item Closeable) {
-	this.stack = append([]Closeable{item}, this.stack...)
+func (s *sshCloseStack) Push(item Closeable) {
+	s.stack = append([]Closeable{item}, s.stack...)
 }
 
 // CloseAll iterates over all the closeable items and closes the connection one by one. This will attempt to close
 // everything in the stack regardless of errors, and return a single multierror at the end that aggregates all
 // encountered errors.
-func (this *sshCloseStack) CloseAll() error {
+func (s *sshCloseStack) CloseAll() error {
 	allErrs := &multierror.Error{}
-	for _, closeable := range this.stack {
+	for _, closeable := range s.stack {
 		// Closing a connection may result in an EOF error if it's already closed (e.g. due to hitting CTRL + D), so
 		// don't report those errors, as there is nothing actually wrong in that case.
 		allErrs = multierror.Append(allErrs, Close(closeable, io.EOF.Error()))

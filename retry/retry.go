@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -48,7 +49,8 @@ func DoWithRetryInterface(
 			return output, nil
 		}
 
-		if _, isFatalErr := err.(FatalError); isFatalErr {
+		var fatalError FatalError
+		if errors.As(err, &fatalError) {
 			logger.Infof("Returning due to fatal error: %v", err)
 			return output, err
 		}

@@ -1,6 +1,7 @@
 package lock
 
 import (
+	stderrors "errors"
 	"fmt"
 	"time"
 
@@ -252,7 +253,8 @@ func createLockTable(options *Options, client *dynamodb.DynamoDB) error {
 // isTableAlreadyBeingCreatedOrUpdatedError will return true if the given error is the error message returned by AWS when the resource already exists and is being
 // updated by someone else
 func isTableAlreadyBeingCreatedOrUpdatedError(err error) bool {
-	awsErr, isAwsErr := err.(awserr.Error)
+	var awsErr awserr.Error
+	isAwsErr := stderrors.As(err, &awsErr)
 	return isAwsErr && awsErr.Code() == "ResourceInUseException"
 }
 
@@ -280,7 +282,8 @@ func waitForTableToBeActive(options *Options, client *dynamodb.DynamoDB) error {
 func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bool, error) {
 	output, err := client.DescribeTable(&dynamodb.DescribeTableInput{TableName: aws.String(tableName)})
 	if err != nil {
-		if awsErr, isAwsErr := err.(awserr.Error); isAwsErr && awsErr.Code() == "ResourceNotFoundException" {
+		var awsErr awserr.Error
+		if stderrors.As(err, &awsErr) && awsErr.Code() == "ResourceNotFoundException" {
 			return false, nil
 		} else {
 			return false, errors.WithStackTrace(err)

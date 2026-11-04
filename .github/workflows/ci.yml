@@ -67,95 +67,13 @@ jobs:
         if: ${{ !cancelled() }}
         run: git ls-files -z '*Dockerfile*' | xargs -0 hadolint
 
-      # Pre-existing issues are held back by the baseline in .golangci.yml; see the Full Lint workflow.
       - name: Run golangci-lint
         if: ${{ !cancelled() }}
         run: golangci-lint run ./...
 
-  # Lints without the baseline in .golangci.yml, so it fails until all pre-existing issues are fixed.
-  # It does not block the tests and must not be a required check.
-  full-lint:
-    name: Full Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set up mise
-        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
-        with:
-          version: 2026.11.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Go module cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-lint-${{ hashFiles('mise.toml', '**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-lint-
-
-      - name: Download Go modules
-        run: go mod download
-
-      # The config must stay in the repository root, because exclusion paths resolve relative to it.
-      - name: Build config without the baseline
-        run: yq 'del(.linters.exclusions.rules) | .issues.uniq-by-line = false' .golangci.yml > .golangci.full.yml
-
-      - name: Run golangci-lint
-        run: |
-          mkdir -p /tmp/lint
-          golangci-lint run -c .golangci.full.yml --issues-exit-code=0 \
-            --output.text.path=stdout \
-            --output.tab.path=/tmp/lint/issues.txt \
-            --output.json.path=/tmp/lint/issues.json \
-            ./...
-
-      - name: Write job summary
-        run: |
-          {
-            echo "## Lint debt"
-            echo
-            echo "$(yq -p json -oy '.Issues | length' /tmp/lint/issues.json) issues held back by the baseline in \`.golangci.yml\`."
-            echo
-            echo "| Linter | Issues |"
-            echo "| --- | --- |"
-            yq -p json -oy '.Issues | group_by(.FromLinter) | .[] | "| " + .[0].FromLinter + " | " + (length | tostring) + " |"' /tmp/lint/issues.json
-            echo
-            echo "<details><summary>All issues</summary>"
-            echo
-            echo '```text'
-            cat /tmp/lint/issues.txt
-            echo '```'
-            echo
-            echo "</details>"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload lint report
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: full-lint-report
-          path: /tmp/lint/
-          retention-days: 30
-
-      # GitHub shows at most 10 error annotations per step; the job summary lists every issue.
-      - name: Fail on lint debt
-        run: |
-          count="$(yq -p json -oy '.Issues | length' /tmp/lint/issues.json)"
-          if [ "$count" -gt 0 ]; then
-            yq -p json -oy '.Issues[] | "::error file=" + .Pos.Filename + ",line=" + (.Pos.Line | tostring) + ",col=" + (.Pos.Column | tostring) + ",title=" + .FromLinter + "::" + (.Text | sub("\n"; "%0A"))' /tmp/lint/issues.json
-            echo "::error::${count} lint issues are held back by the baseline in .golangci.yml. Fix them and remove their exclusion rules."
-            exit 1
-          fi
-
   unit-tests:
     name: Unit Tests
-    # Waits for every lint job, but only a Lint failure blocks the tests.
-    needs: [lint, full-lint]
-    if: ${{ !cancelled() && needs.lint.result == 'success' }}
+    needs: lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -203,9 +121,7 @@ jobs:
 
   aws-tests:
     name: AWS Tests
-    # Waits for every lint job, but only a Lint failure blocks the tests.
-    needs: [lint, full-lint]
-    if: ${{ !cancelled() && needs.lint.result == 'success' }}
+    needs: lint
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:

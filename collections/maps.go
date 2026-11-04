@@ -71,11 +71,7 @@ func KeyValueStringSliceAsMap(kvPairs []string) map[string][]string {
 			value = strings.Join(x[1:], "=")
 		}
 
-		if _, hasKey := out[key]; hasKey {
-			out[key] = append(out[key], value)
-		} else {
-			out[key] = []string{value}
-		}
+		out[key] = append(out[key], value)
 	}
 	return out
 }
@@ -100,7 +96,6 @@ func MapToSlice[M ~map[K]V, K comparable, V any](m M, sep string) []string {
 	for key, val := range m {
 		s := fmt.Sprintf("%v%s%v", key, sep, val)
 		list = append(list, s)
-
 	}
 
 	return list

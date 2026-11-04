@@ -1,7 +1,7 @@
 package git
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -14,7 +14,7 @@ import (
 func TestGitClone(t *testing.T) {
 	t.Parallel()
 
-	tmpDir, err := ioutil.TempDir("", "git-test")
+	tmpDir, err := os.MkdirTemp("", "git-test")
 	require.NoError(t, err)
 	require.NoError(t, Clone(logging.GetLogger(t.Name(), ""), "https://github.com/gruntwork-io/go-commons.git", tmpDir))
 	assert.True(t, files.FileExists(filepath.Join(tmpDir, "LICENSE.txt")))
@@ -23,7 +23,7 @@ func TestGitClone(t *testing.T) {
 func TestGitCheckout(t *testing.T) {
 	t.Parallel()
 
-	tmpDir, err := ioutil.TempDir("", "git-test")
+	tmpDir, err := os.MkdirTemp("", "git-test")
 	require.NoError(t, err)
 	require.NoError(t, Clone(logging.GetLogger(t.Name(), ""), "https://github.com/gruntwork-io/go-commons.git", tmpDir))
 	require.NoError(t, Checkout(logging.GetLogger(t.Name(), ""), "v0.10.0", tmpDir))
