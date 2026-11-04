@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.44.122
 	github.com/aws/aws-sdk-go-v2 v1.41.5
 	github.com/aws/aws-sdk-go-v2/config v1.32.12
-	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.23.16
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.47.2
+	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.64.4
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.296.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.97.3
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.15.13
 	github.com/bgentry/speakeasy v0.1.0
