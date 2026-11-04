@@ -101,7 +101,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p /tmp/logs
-          go test -v -count=1 -timeout 30m $(go list ./... | grep -v -e '/awscommons/' -e '/lock$') 2>&1 | tee /tmp/logs/unit-tests.log
+          go test -v -count=1 -timeout 30m $(go list ./... | grep -v -e '/awscommons/' -e '/lock$' -e '/ssh$') 2>&1 | tee /tmp/logs/unit-tests.log
 
       - name: Upload test logs
         if: always()
@@ -156,7 +156,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p /tmp/logs
-          go test -v -count=1 -timeout 45m ./awscommons/... ./lock/... 2>&1 | tee /tmp/logs/aws-tests.log
+          go test -v -count=1 -timeout 45m ./awscommons/... ./lock/... ./ssh/... 2>&1 | tee /tmp/logs/aws-tests.log
 
       - name: Upload test logs
         if: always()
