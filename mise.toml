@@ -1,4 +1,6 @@
 [tools]
 go = "1.26.10"
 golangci-lint = "2.15.0"
-opentofu = "1.11.6"
+gotestsum = "1.13.0"
+hadolint = "2.15.1"
+opentofu = "1.13.2"

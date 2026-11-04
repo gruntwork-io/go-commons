@@ -24,9 +24,9 @@ jobs:
           fetch-depth: 0 # Needed for --new-from-rev
 
       - name: Set up mise
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.9.12
+          version: 2026.11.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -57,6 +57,10 @@ jobs:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || 'HEAD~1' }}
         run: golangci-lint run --new-from-rev="$BASE_SHA" ./...
 
+      - name: Run hadolint
+        if: ${{ !cancelled() }}
+        run: git ls-files -z '*Dockerfile*' | xargs -0 hadolint
+
       - name: Check go.mod and go.sum are tidy
         if: ${{ !cancelled() }}
         run: |
@@ -75,9 +79,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up mise
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.9.12
+          version: 2026.11.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -99,9 +103,12 @@ jobs:
         env:
           GITHUB_OAUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -o pipefail
           mkdir -p /tmp/logs
-          go test -v -count=1 -timeout 30m $(go list ./... | grep -v -e '/awscommons/' -e '/lock$' -e '/ssh$') 2>&1 | tee /tmp/logs/unit-tests.log
+          gotestsum --format github-actions \
+            --junitfile /tmp/logs/unit-tests.xml \
+            --jsonfile /tmp/logs/unit-tests.json \
+            --packages "$(go list ./... | grep -v -e '/awscommons/' -e '/lock$' -e '/ssh$')" \
+            -- -count=1 -timeout 30m
 
       - name: Upload test logs
         if: always()
@@ -127,9 +134,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up mise
-        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.9.12
+          version: 2026.11.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -154,9 +161,12 @@ jobs:
 
       - name: Run AWS tests
         run: |
-          set -o pipefail
           mkdir -p /tmp/logs
-          go test -v -count=1 -timeout 45m ./awscommons/... ./lock/... ./ssh/... 2>&1 | tee /tmp/logs/aws-tests.log
+          gotestsum --format github-actions \
+            --junitfile /tmp/logs/aws-tests.xml \
+            --jsonfile /tmp/logs/aws-tests.json \
+            --packages "./awscommons/... ./lock/... ./ssh/..." \
+            -- -count=1 -timeout 45m
 
       - name: Upload test logs
         if: always()
