@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v44/github"
-	"github.com/gruntwork-io/terratest/modules/environment"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -22,9 +21,11 @@ const (
 func TestGithubAppConfig(t *testing.T) {
 	t.Parallel()
 
-	environment.RequireEnvVar(t, ghAppIDEnv)
-	environment.RequireEnvVar(t, ghAppInstallationIDEnv)
-	environment.RequireEnvVar(t, ghAppPrivateKeyBase64Env)
+	for _, name := range []string{ghAppIDEnv, ghAppInstallationIDEnv, ghAppPrivateKeyBase64Env} {
+		if os.Getenv(name) == "" {
+			t.Skipf("%s is not set; skipping GitHub App test", name)
+		}
+	}
 
 	ghAppConfig := getGitHubAppConfig(t)
 	token, err := ghAppConfig.GetInstallationToken()

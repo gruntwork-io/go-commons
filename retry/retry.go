@@ -41,7 +41,7 @@ func DoWithRetryInterface(
 	var err error
 
 	for i := 0; i <= maxRetries; i++ {
-		logger.Infof(actionDescription)
+		logger.Info(actionDescription)
 
 		output, err = action()
 		if err == nil {

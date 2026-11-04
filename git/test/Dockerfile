@@ -1,10 +1,8 @@
-FROM golang:1.17
-ARG repo_ref="master"
+FROM golang:1.26
 
-# Clone the go-commons repo and checkout the desired ref
-RUN mkdir -p /workspace \
-    && git clone https://github.com/gruntwork-io/go-commons.git /workspace/go-commons \
-    && git -C /workspace/go-commons checkout ${repo_ref}
+# Build context is the repository root, so the tests run against the checked-out source.
+COPY . /workspace/go-commons
 
 WORKDIR /workspace/go-commons
+RUN go mod download
 CMD ["go", "test", "-v", "-tags", "gittest", "./git/test"]
