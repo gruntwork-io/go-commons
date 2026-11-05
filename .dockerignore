@@ -1,3 +1,7 @@
 .git
 .idea
 .cursor
+.env
+.env.*
+**/*.pem
+**/*.key
