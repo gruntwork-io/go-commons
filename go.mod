@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.343.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.6
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.8
-	github.com/bgentry/speakeasy v0.1.0
+	github.com/bgentry/speakeasy v0.2.0
 	github.com/bradleyfalzon/ghinstallation v1.1.1
 	github.com/fatih/color v1.18.0
 	github.com/go-errors/errors v1.5.1
