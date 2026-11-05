@@ -13,7 +13,7 @@ require (
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/bradleyfalzon/ghinstallation v1.1.1
 	github.com/fatih/color v1.18.0
-	github.com/go-errors/errors v1.4.2
+	github.com/go-errors/errors v1.5.1
 	github.com/google/go-github/v44 v44.1.0
 	github.com/google/uuid v1.6.0
 	github.com/gruntwork-io/terratest v0.46.16
