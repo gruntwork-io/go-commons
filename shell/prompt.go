@@ -21,10 +21,10 @@ func PromptUserForInput(prompt string, options *ShellOptions) (string, error) {
 }
 
 func FPromptUserForInput(out io.Writer, in io.Reader, prompt string, options *ShellOptions) (string, error) {
-	BRIGHT_GREEN.Fprint(out, prompt)
+	_, _ = BRIGHT_GREEN.Fprint(out, prompt)
 
 	if options.NonInteractive {
-		fmt.Fprintln(out)
+		_, _ = fmt.Fprintln(out)
 		options.Logger.Info("The non-interactive flag is set to true, so assuming 'yes' for all prompts")
 		return "yes", nil
 	}
@@ -61,7 +61,7 @@ func FPromptUserForYesNo(out io.Writer, in io.Reader, prompt string, options *Sh
 
 // Prompt a user for a password or other sensitive info that should not be echoed back to stdout.
 func PromptUserForPassword(prompt string, options *ShellOptions) (string, error) {
-	BRIGHT_GREEN.Print(prompt)
+	_, _ = BRIGHT_GREEN.Print(prompt)
 
 	if options.NonInteractive {
 		return "", errors.WithStackTrace(NonInteractivePasswordPrompt)
@@ -77,4 +77,5 @@ func PromptUserForPassword(prompt string, options *ShellOptions) (string, error)
 
 // Custom error types
 
-var NonInteractivePasswordPrompt = fmt.Errorf("The non-interactive flag is set, so unable to prompt user for a password.")
+// The name and message are part of the public API, so they keep their original form.
+var NonInteractivePasswordPrompt = fmt.Errorf("The non-interactive flag is set, so unable to prompt user for a password.") //nolint:staticcheck

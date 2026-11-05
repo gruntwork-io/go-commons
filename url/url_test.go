@@ -1,9 +1,10 @@
 package url
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFormatUrl(t *testing.T) {
@@ -32,9 +33,6 @@ func TestFormatUrl(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		// Store a copy in scope so all the test cases don't end up running the last item in the loop
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			actual, err := FormatUrl(testCase.baseUrl, testCase.parts, testCase.query, testCase.fragment)
 			assert.NoError(t, err)
@@ -43,7 +41,7 @@ func TestFormatUrl(t *testing.T) {
 	}
 }
 
-func parts(p ... string) []string {
+func parts(p ...string) []string {
 	return p
 }
 
@@ -54,20 +52,5 @@ func query0() url.Values {
 func query1(key string, value string) url.Values {
 	return map[string][]string{
 		key: {value},
-	}
-}
-
-func query2(key1 string, value1 string, key2 string, value2 string) url.Values {
-	return map[string][]string{
-		key1: {value1},
-		key2: {value2},
-	}
-}
-
-func query3(key1 string, value1 string, key2 string, value2 string, key3 string, value3 string) url.Values {
-	return map[string][]string{
-		key1: {value1},
-		key2: {value2},
-		key3: {value3},
 	}
 }

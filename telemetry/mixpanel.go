@@ -3,10 +3,11 @@ package telemetry
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type MixpanelTelemetryTracker struct {

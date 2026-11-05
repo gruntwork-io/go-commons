@@ -2,7 +2,7 @@ package files
 
 import (
 	"os"
-	"io/ioutil"
+
 	"github.com/gruntwork-io/go-commons/errors"
 )
 
@@ -20,7 +20,7 @@ func IsDir(path string) bool {
 
 // Return the contents of the file at the given path as a string
 func ReadFileAsString(path string) (string, error) {
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return "", errors.WithStackTraceAndPrefix(err, "Error reading file at path %s", path)
 	}
@@ -30,7 +30,7 @@ func ReadFileAsString(path string) (string, error) {
 
 // Copy a file from source to destination
 func CopyFile(source string, destination string) error {
-	contents, err := ioutil.ReadFile(source)
+	contents, err := os.ReadFile(source)
 	if err != nil {
 		return errors.WithStackTrace(err)
 	}
@@ -45,5 +45,5 @@ func WriteFileWithSamePermissions(source string, destination string, contents []
 		return errors.WithStackTrace(err)
 	}
 
-	return ioutil.WriteFile(destination, contents, fileInfo.Mode())
+	return os.WriteFile(destination, contents, fileInfo.Mode())
 }

@@ -1,0 +1,71 @@
+name: Set up
+description: >-
+  Installs the tools pinned in mise.toml, restores the Go caches, and downloads the Go modules.
+  Run go-cache-save at the end of the job to write the caches back from master.
+
+inputs:
+  github-token:
+    description: Token mise uses to download tools from GitHub without hitting rate limits.
+    required: true
+  gocache-name:
+    description: >-
+      Go build cache to restore, such as `lint` or `test`. Jobs that compile the same packages
+      with the same flags share a name.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up mise
+      uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
+      with:
+        version: 2026.11.0
+        cache_save: ${{ github.ref == 'refs/heads/master' }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+
+    - name: Compute Go cache keys
+      shell: bash
+      env:
+        GO_SUM_HASH: ${{ hashFiles('**/go.sum') }}
+        TOOLS_HASH: ${{ hashFiles('mise.toml') }}
+        GOCACHE_NAME: ${{ inputs.gocache-name }}
+      run: |
+        {
+          echo "GO_CACHE_GOMODCACHE_PATH=$(go env GOMODCACHE)"
+          echo "GO_CACHE_GOMODCACHE_KEY=${RUNNER_OS}-gomodcache-${GO_SUM_HASH}"
+          echo "GO_CACHE_GOCACHE_PATH=$(go env GOCACHE)"
+          echo "GO_CACHE_GOCACHE_PREFIX=${RUNNER_OS}-gocache-${GOCACHE_NAME}-${TOOLS_HASH}-"
+          echo "GO_CACHE_GOCACHE_KEY=${RUNNER_OS}-gocache-${GOCACHE_NAME}-${TOOLS_HASH}-${GO_SUM_HASH}"
+        } >> "$GITHUB_ENV"
+
+    - name: Restore Go module cache
+      id: gomodcache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.GO_CACHE_GOMODCACHE_PATH }}
+        key: ${{ env.GO_CACHE_GOMODCACHE_KEY }}
+        restore-keys: ${{ runner.os }}-gomodcache-
+
+    - name: Restore Go build cache
+      id: gocache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.GO_CACHE_GOCACHE_PATH }}
+        key: ${{ env.GO_CACHE_GOCACHE_KEY }}
+        restore-keys: ${{ env.GO_CACHE_GOCACHE_PREFIX }}
+
+    - name: Record Go cache hits
+      shell: bash
+      env:
+        GOMODCACHE_HIT: ${{ steps.gomodcache.outputs.cache-hit }}
+        GOCACHE_HIT: ${{ steps.gocache.outputs.cache-hit }}
+      run: |
+        {
+          echo "GO_CACHE_GOMODCACHE_HIT=${GOMODCACHE_HIT:-false}"
+          echo "GO_CACHE_GOCACHE_HIT=${GOCACHE_HIT:-false}"
+        } >> "$GITHUB_ENV"
+
+    - name: Download Go modules
+      shell: bash
+      run: go mod download

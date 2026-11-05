@@ -59,19 +59,20 @@ func WrappedHelpPrinter(out io.Writer, templateString string, data interface{}) 
 	for _, line := range strings.Split(rendered.String(), "\n") {
 		indent := HelpTableAwareDetermineIndent(line, "\t+")
 		wrappedLine := IndentAwareWrapText(line, HelpTextLineWidth, indent)
-		fmt.Fprintln(writer, wrappedLine)
+		_, _ = fmt.Fprintln(writer, wrappedLine)
 	}
-	writer.Flush()
+	_ = writer.Flush()
 }
 
 // regexp version of strings.SplitAfter.
 // Similar functionality to regexp.Split, but returns the delimited strings
 // with the trailing delimiter appended to it.
 // Example:
-//    re := regexp.MustCompile(`\s+`)
-//    text := "one two three"
-//    out := RegexpSplitAfter(re, text)
-//    out == ["one ", "two ", "three"]
+//
+//	re := regexp.MustCompile(`\s+`)
+//	text := "one two three"
+//	out := RegexpSplitAfter(re, text)
+//	out == ["one ", "two ", "three"]
 func RegexpSplitAfter(re *regexp.Regexp, str string) []string {
 	var out []string
 	indexes := re.FindAllStringIndex(str, -1)
@@ -96,8 +97,9 @@ func RegexpSplitAfter(re *regexp.Regexp, str string) []string {
 // lineWidth = 80
 // indent = `       \t`
 // out:
-//    exec\tExecute a command with temporary AWS credentials obtained by
-//        \tlogging into Gruntwork Houston
+//
+//	exec\tExecute a command with temporary AWS credentials obtained by
+//	    \tlogging into Gruntwork Houston
 func IndentAwareWrapText(text string, lineWidth int, indent string) string {
 	wrapped := ""
 	re := regexp.MustCompile(`\s+`)
@@ -136,7 +138,7 @@ func IndentAwareWrapText(text string, lineWidth int, indent string) string {
 }
 
 func TabAwareStringLength(text string, tabLength int) int {
-	return len(strings.Replace(text, "\t", strings.Repeat(" ", tabLength), -1))
+	return len(strings.ReplaceAll(text, "\t", strings.Repeat(" ", tabLength)))
 }
 
 // Determine the indent string, accounting for textual tables.

@@ -21,7 +21,7 @@ func (err MultipleLookupErrors) Error() string {
 	return strings.Join(messages, "\n")
 }
 
-func (err MultipleLookupErrors) AddError(newErr error) {
+func (err *MultipleLookupErrors) AddError(newErr error) {
 	err.errors = append(err.errors, newErr)
 }
 

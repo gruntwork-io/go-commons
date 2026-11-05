@@ -3,9 +3,10 @@
 package gittest
 
 import (
-	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/go-commons/files"
@@ -20,6 +21,9 @@ import (
 
 const (
 	gitPATEnvName = "GITHUB_OAUTH_TOKEN"
+
+	terratestGitURL = "https://github.com/gruntwork-io/terratest.git"
+	cloudNukeGitURL = "https://github.com/gruntwork-io/cloud-nuke.git"
 )
 
 var (
@@ -29,6 +33,8 @@ var (
 // NOTE: All these tests should be run in the provided docker environment to avoid polluting the local git configuration
 // settings. The tests will assert that it is running in the docker environment, and will fail if it is not.
 // All these tests are also run in serial to avoid race conditions on the git config file.
+// The repositories cloned here are public, so GitHub accepts the clone with any token; tests that check which token
+// was selected read it back from the credential helper instead.
 
 func TestHTTPSAuth(t *testing.T) {
 	defer cleanupGitConfig(t)
@@ -40,11 +46,11 @@ func TestHTTPSAuth(t *testing.T) {
 	environment.RequireEnvVar(t, gitPATEnvName)
 	gitPAT := os.Getenv(gitPATEnvName)
 	require.NoError(t, git.ConfigureHTTPSAuth(logger, "git", gitPAT, "github.com"))
+	assert.Equal(t, gitPAT, credentialFill(t, terratestGitURL))
 
-	tmpDir, err := ioutil.TempDir("", "git-test")
-	require.NoError(t, err)
-	require.NoError(t, git.Clone(logger, "https://github.com/gruntwork-io/terraform-aws-lambda.git", tmpDir))
-	assert.True(t, files.IsDir(filepath.Join(tmpDir, "modules/lambda")))
+	tmpDir := t.TempDir()
+	require.NoError(t, git.Clone(logger, terratestGitURL, tmpDir))
+	assert.True(t, files.IsDir(filepath.Join(tmpDir, "modules")))
 }
 
 func TestHTTPSAuthWithPath(t *testing.T) {
@@ -57,9 +63,8 @@ func TestHTTPSAuthWithPath(t *testing.T) {
 	environment.RequireEnvVar(t, gitPATEnvName)
 	gitPAT := os.Getenv(gitPATEnvName)
 
-	lambdaGitURL := "https://github.com/gruntwork-io/terraform-aws-lambda.git"
-	lambdaOpts := git.CacheCredentialOptions{
-		Host:            lambdaGitURL,
+	terratestOpts := git.CacheCredentialOptions{
+		Host:            terratestGitURL,
 		DefaultUsername: "git",
 		IncludeHTTPPath: true,
 		SocketPath:      "",
@@ -67,17 +72,17 @@ func TestHTTPSAuthWithPath(t *testing.T) {
 	}
 	require.NoError(
 		t,
-		git.ConfigureCacheCredentialsHelper(logger, lambdaOpts),
+		git.ConfigureCacheCredentialsHelper(logger, terratestOpts),
 	)
 	require.NoError(
 		t,
-		git.StoreCacheCredentials(logger, "git", gitPAT, "github.com", "gruntwork-io/terraform-aws-lambda.git", ""),
+		git.StoreCacheCredentials(logger, "git", gitPAT, "github.com", "gruntwork-io/terratest.git", ""),
 	)
+	assert.Equal(t, gitPAT, credentialFill(t, terratestGitURL))
 
-	tmpDir, err := ioutil.TempDir("", "git-test")
-	require.NoError(t, err)
-	require.NoError(t, git.Clone(logger, lambdaGitURL, tmpDir))
-	assert.True(t, files.IsDir(filepath.Join(tmpDir, "modules/lambda")))
+	tmpDir := t.TempDir()
+	require.NoError(t, git.Clone(logger, terratestGitURL, tmpDir))
+	assert.True(t, files.IsDir(filepath.Join(tmpDir, "modules")))
 }
 
 func TestHTTPSAuthMixed(t *testing.T) {
@@ -90,27 +95,26 @@ func TestHTTPSAuthMixed(t *testing.T) {
 	// Make sure the directory for git credential sockets exist
 	socketPath := "/tmp/git-credential-sockets"
 	require.NoError(t, os.MkdirAll(socketPath, 0o700))
-	lambdaSocketPath := filepath.Join(socketPath, "lambda")
+	terratestSocketPath := filepath.Join(socketPath, "terratest")
 	githubSocketPath := filepath.Join(socketPath, "github")
 
 	environment.RequireEnvVar(t, gitPATEnvName)
 	gitPAT := os.Getenv(gitPATEnvName)
 
-	lambdaGitURL := "https://github.com/gruntwork-io/terraform-aws-lambda.git"
-	lambdaOpts := git.CacheCredentialOptions{
-		Host:            lambdaGitURL,
+	terratestOpts := git.CacheCredentialOptions{
+		Host:            terratestGitURL,
 		DefaultUsername: "git",
 		IncludeHTTPPath: true,
-		SocketPath:      lambdaSocketPath,
+		SocketPath:      terratestSocketPath,
 		Timeout:         3600,
 	}
 	require.NoError(
 		t,
-		git.ConfigureCacheCredentialsHelper(logger, lambdaOpts),
+		git.ConfigureCacheCredentialsHelper(logger, terratestOpts),
 	)
 	require.NoError(
 		t,
-		git.StoreCacheCredentials(logger, "git", gitPAT, "github.com", "gruntwork-io/terraform-aws-lambda.git", lambdaSocketPath),
+		git.StoreCacheCredentials(logger, "git", gitPAT, "github.com", "gruntwork-io/terratest.git", terratestSocketPath),
 	)
 
 	githubOpts := git.CacheCredentialOptions{
@@ -129,22 +133,12 @@ func TestHTTPSAuthMixed(t *testing.T) {
 		git.StoreCacheCredentials(logger, "git", "wrong-pat", "github.com", "", githubSocketPath),
 	)
 
-	tmpDir, err := ioutil.TempDir("", "git-test")
-	require.NoError(t, err)
-	lambdaDir := filepath.Join(tmpDir, "terraform-aws-lambda")
-	ciDir := filepath.Join(tmpDir, "terraform-aws-ci")
-	require.NoError(t, os.Mkdir(lambdaDir, 0o755))
-	require.NoError(t, os.Mkdir(ciDir, 0o755))
+	assert.Equal(t, gitPAT, credentialFill(t, terratestGitURL))
+	assert.Equal(t, "wrong-pat", credentialFill(t, cloudNukeGitURL))
 
-	require.NoError(
-		t,
-		git.Clone(logger, lambdaGitURL, lambdaDir),
-	)
-	require.Error(
-		t,
-		git.Clone(logger, "https://github.com/gruntwork-io/terraform-aws-ci.git", ciDir),
-	)
-
+	terratestDir := filepath.Join(t.TempDir(), "terratest")
+	require.NoError(t, os.Mkdir(terratestDir, 0o755))
+	require.NoError(t, git.Clone(logger, terratestGitURL, terratestDir))
 }
 
 func TestForceHTTPS(t *testing.T) {
@@ -159,17 +153,33 @@ func TestForceHTTPS(t *testing.T) {
 	require.NoError(t, git.ConfigureHTTPSAuth(logger, "git", gitPAT, "github.com"))
 	require.NoError(t, git.ConfigureForceHTTPS(logger))
 
-	tmpDir, err := ioutil.TempDir("", "git-test")
+	tmpDir := t.TempDir()
+	require.NoError(t, git.Clone(logger, "git@github.com:gruntwork-io/terratest.git", tmpDir))
+	assert.True(t, files.IsDir(filepath.Join(tmpDir, "modules")))
+}
+
+// credentialFill returns the password git's configured credential helpers supply for the given URL.
+func credentialFill(t *testing.T, url string) string {
+	cmd := exec.Command("git", "credential", "fill")
+	cmd.Stdin = strings.NewReader("url=" + url + "\n\n")
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	out, err := cmd.Output()
 	require.NoError(t, err)
-	require.NoError(t, git.Clone(logger, "git@github.com:gruntwork-io/terraform-aws-lambda.git", tmpDir))
-	assert.True(t, files.IsDir(filepath.Join(tmpDir, "modules/lambda")))
+
+	for _, line := range strings.Split(string(out), "\n") {
+		if password, ok := strings.CutPrefix(line, "password="); ok {
+			return password
+		}
+	}
+	t.Fatalf("git credential fill returned no password for %s", url)
+	return ""
 }
 
 // cleanupGitConfig will reset the git credential cache and git config
 func cleanupGitConfig(t *testing.T) {
-	data, err := ioutil.ReadFile("/root/.gitconfig")
+	data, err := os.ReadFile("/root/.gitconfig")
 	require.NoError(t, err)
-	ttlogger.Logf(t, string(data))
+	ttlogger.Log(t, string(data))
 
 	require.NoError(t, os.Remove("/root/.gitconfig"))
 

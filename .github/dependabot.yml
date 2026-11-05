@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # The AWS SDK modules share internal APIs, so mismatched versions fail to build.
+      aws-sdk-go-v2:
+        patterns:
+          - github.com/aws/aws-sdk-go-v2
+          - github.com/aws/aws-sdk-go-v2/*
+          - github.com/aws/smithy-go
+
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /git/test
+    schedule:
+      interval: weekly

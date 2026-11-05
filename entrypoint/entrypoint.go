@@ -1,6 +1,7 @@
 package entrypoint
 
 import (
+	stderrors "errors"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -68,7 +69,8 @@ func getExitCode(err error) int {
 	exitCode := defaultSuccessExitCode
 	if err != nil {
 		errWithoutStackTrace := errors.Unwrap(err)
-		errorWithExitCode, isErrorWithExitCode := errWithoutStackTrace.(errors.ErrorWithExitCode)
+		var errorWithExitCode errors.ErrorWithExitCode
+		isErrorWithExitCode := stderrors.As(errWithoutStackTrace, &errorWithExitCode)
 		if isErrorWithExitCode {
 			exitCode = errorWithExitCode.ExitCode
 		} else {

@@ -1,7 +1,7 @@
 package files
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 
@@ -55,7 +55,7 @@ func Grep(regex *regexp.Regexp, glob string) (bool, error) {
 		if IsDir(match) {
 			continue
 		}
-		bytes, err := ioutil.ReadFile(match)
+		bytes, err := os.ReadFile(match)
 		if err != nil {
 			return false, errors.WithStackTrace(err)
 		}

@@ -1,0 +1,8 @@
+[tools]
+actionlint = "1.7.12"
+go = "1.27.3"
+golangci-lint = "2.15.0"
+gotestsum = "1.13.0"
+hadolint = "2.15.1"
+opentofu = "1.13.2"
+shellcheck = "0.11.0"

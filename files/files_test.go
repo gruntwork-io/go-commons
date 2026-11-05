@@ -1,9 +1,10 @@
 package files
 
 import (
+	"os"
 	"testing"
+
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 )
 
 const TEST_FILE_EXPECTED_CONTENTS = "Hello, World!"
@@ -49,7 +50,7 @@ func TestReadFileAsString(t *testing.T) {
 func TestCopyFile(t *testing.T) {
 	t.Parallel()
 
-	destPath, err := ioutil.TempFile("", "test-copy-file")
+	destPath, err := os.CreateTemp("", "test-copy-file")
 	if err != nil {
 		t.Fatal(err)
 	}

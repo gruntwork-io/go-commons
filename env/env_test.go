@@ -34,9 +34,6 @@ func TestGetBool(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		// to make sure testCase's values don't get updated due to concurrency within the scope of t.Run(..) below
-		testCase := testCase
-
 		envVarName := fmt.Sprintf("TestGetBool-testCase-%d", i)
 		t.Run(envVarName, func(t *testing.T) {
 			t.Parallel()
@@ -74,9 +71,6 @@ func TestGetNegativeBool(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		// to make sure testCase's values don't get updated due to concurrency within the scope of t.Run(..) below
-		testCase := testCase
-
 		envVarName := fmt.Sprintf("TestGetNegativeBool-testCase-%d", i)
 		t.Run(envVarName, func(t *testing.T) {
 			t.Parallel()
@@ -102,9 +96,6 @@ func TestGetInt(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		// to make sure testCase's values don't get updated due to concurrency within the scope of t.Run(..) below
-		testCase := testCase
-
 		envVarName := fmt.Sprintf("TestGetInt-testCase-%d", i)
 		t.Run(envVarName, func(t *testing.T) {
 			t.Parallel()
@@ -128,9 +119,6 @@ func TestGetString(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		// to make sure testCase's values don't get updated due to concurrency within the scope of t.Run(..) below
-		testCase := testCase
-
 		envVarName := fmt.Sprintf("test-%d-val-%s-expected-%s", i, testCase.envVarValue, testCase.expected)
 		t.Run(envVarName, func(t *testing.T) {
 			t.Parallel()

@@ -1,0 +1,22 @@
+name: Save Go caches
+description: >-
+  Saves the caches that the setup action restored, on master only and only when the exact key
+  missed. Other branches restore master's entries, so saving from them would only evict master's.
+  Run it with an `if: !cancelled()` guard so a failing job still seeds the cache.
+
+runs:
+  using: composite
+  steps:
+    - name: Save Go module cache
+      if: github.ref == 'refs/heads/master' && env.GO_CACHE_GOMODCACHE_HIT != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.GO_CACHE_GOMODCACHE_PATH }}
+        key: ${{ env.GO_CACHE_GOMODCACHE_KEY }}
+
+    - name: Save Go build cache
+      if: github.ref == 'refs/heads/master' && env.GO_CACHE_GOCACHE_HIT != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ env.GO_CACHE_GOCACHE_PATH }}
+        key: ${{ env.GO_CACHE_GOCACHE_KEY }}

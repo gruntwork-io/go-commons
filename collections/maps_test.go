@@ -60,10 +60,6 @@ func TestMergeMaps(t *testing.T) {
 	}
 
 	for _, testCase := range testCasesStr {
-		// The following is necessary to make sure testCase's values don't
-		// get updated due to concurrency within the scope of t.Run(..) below
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -122,10 +118,6 @@ func TestMergeMaps(t *testing.T) {
 	}
 
 	for _, testCase := range testCasesInt {
-		// The following is necessary to make sure testCase's values don't
-		// get updated due to concurrency within the scope of t.Run(..) below
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -239,37 +231,37 @@ func TestKeyValueStringSliceAsMap(t *testing.T) {
 		{
 			"BaseCase",
 			[]string{"key=value"},
-			map[string][]string{"key": []string{"value"}},
+			map[string][]string{"key": {"value"}},
 		},
 		{"EmptyCase", []string{}, map[string][]string{}},
 		{
 			"RepeatedKey",
 			[]string{"key=valueA", "foo=bar", "key=valueB"},
 			map[string][]string{
-				"key": []string{"valueA", "valueB"},
-				"foo": []string{"bar"},
+				"key": {"valueA", "valueB"},
+				"foo": {"bar"},
 			},
 		},
 		{
 			"EmptyValue",
 			[]string{"key", "foo=", "foo=baz"},
 			map[string][]string{
-				"key": []string{""},
-				"foo": []string{"", "baz"},
+				"key": {""},
+				"foo": {"", "baz"},
 			},
 		},
 		{
 			"EqualInValue",
 			[]string{"key=foo=bar"},
 			map[string][]string{
-				"key": []string{"foo=bar"},
+				"key": {"foo=bar"},
 			},
 		},
 		{
 			"EmptyString",
 			[]string{""},
 			map[string][]string{
-				"": []string{""},
+				"": {""},
 			},
 		},
 	}
@@ -295,9 +287,6 @@ func TestMapJoin(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		// to make sure testCase's values don't get updated due to concurrency within the scope of t.Run(..) below
-		testCase := testCase
-
 		t.Run(fmt.Sprintf("test-%d-vals-%v-expected-%s", i, testCase.vals, testCase.expected), func(t *testing.T) {
 			t.Parallel()
 
@@ -327,9 +316,6 @@ func TestMapToSlice(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		// to make sure testCase's values don't get updated due to concurrency within the scope of t.Run(..) below
-		testCase := testCase
-
 		t.Run(fmt.Sprintf("test-%d-vals-%v-expected-%s", i, testCase.vals, testCase.expected), func(t *testing.T) {
 			t.Parallel()
 
