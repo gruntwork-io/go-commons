@@ -30,18 +30,18 @@ func RunCommandAndGetOutput(host Host, cmd string) (string, error) {
 // runSSHCommand will setup a new SSH connection to the given host, run the command, and return the stdout or combined
 // output depending on which output is requested.
 func runSSHCommand(host Host, cmd string, retType outputReturnType) (output string, returnErr error) {
-	hostOptions, err := setUpSSHOptions(host)
-	if err != nil {
-		return "", err
-	}
-	hostOptions.Command = cmd
-
 	closeStack := &sshCloseStack{stack: []Closeable{}}
 	defer func() {
 		if err := closeStack.CloseAll(); err != nil && returnErr == nil {
 			returnErr = err
 		}
 	}()
+
+	hostOptions, err := setUpSSHOptions(host, closeStack)
+	if err != nil {
+		return "", err
+	}
+	hostOptions.Command = cmd
 
 	client, err := setUpSSHClient(hostOptions, closeStack)
 	if err != nil {
@@ -66,15 +66,15 @@ func runSSHCommand(host Host, cmd string, retType outputReturnType) (output stri
 }
 
 // setUpSSHOptions will configure SSHConnectionOptions for the given host, recursively configuring jump host connections
-// as needed.
-func setUpSSHOptions(host Host) (*sshConnectionOptions, error) {
-	hostOptions, err := host.getSSHConnectionOptions()
+// as needed. Agent connections opened for authentication are pushed onto closeStack.
+func setUpSSHOptions(host Host, closeStack *sshCloseStack) (*sshConnectionOptions, error) {
+	hostOptions, err := host.getSSHConnectionOptions(closeStack)
 	if err != nil {
 		return nil, err
 	}
 
 	if host.JumpHost != nil {
-		jumpHostOptions, err := setUpSSHOptions(*host.JumpHost)
+		jumpHostOptions, err := setUpSSHOptions(*host.JumpHost, closeStack)
 		if err != nil {
 			return nil, err
 		}

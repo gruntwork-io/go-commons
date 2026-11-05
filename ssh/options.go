@@ -36,12 +36,12 @@ type Host struct {
 
 // getSSHConnectionOptions converts the host configuration into a set of options that can be used for managing the SSH
 // connection.
-func (host *Host) getSSHConnectionOptions() (*sshConnectionOptions, error) {
+func (host *Host) getSSHConnectionOptions(closeStack *sshCloseStack) (*sshConnectionOptions, error) {
 	if host == nil {
 		return nil, nil
 	}
 
-	authMethods, err := host.createAuthMethods()
+	authMethods, err := host.createAuthMethods(closeStack)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +66,9 @@ func (h Host) getPort() int {
 	}
 }
 
-// createAuthMethods returns an array of authentication methods
-func (host Host) createAuthMethods() ([]ssh.AuthMethod, error) {
+// createAuthMethods returns an array of authentication methods. Agent connections must stay open until authentication
+// completes, so they are pushed onto closeStack to be closed with the rest of the SSH resources.
+func (host Host) createAuthMethods(closeStack *sshCloseStack) ([]ssh.AuthMethod, error) {
 	var methods []ssh.AuthMethod
 
 	// override local ssh agent with given sshAgent instance
@@ -77,6 +78,7 @@ func (host Host) createAuthMethods() ([]ssh.AuthMethod, error) {
 			fmt.Print("Failed to dial in memory ssh agent")
 			return methods, err
 		}
+		closeStack.Push(conn)
 		agentClient := agent.NewClient(conn)
 		methods = append(methods, []ssh.AuthMethod{ssh.PublicKeysCallback(agentClient.Signers)}...)
 	}
@@ -89,6 +91,7 @@ func (host Host) createAuthMethods() ([]ssh.AuthMethod, error) {
 		if err != nil {
 			return methods, err
 		}
+		closeStack.Push(conn)
 		agentClient := agent.NewClient(conn)
 		methods = append(methods, []ssh.AuthMethod{ssh.PublicKeysCallback(agentClient.Signers)}...)
 	}
