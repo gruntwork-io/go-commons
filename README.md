@@ -161,6 +161,10 @@ Note that the routines in this package are adapted for `aws-sdk-go-v2`, not v1 (
 
 This package contains helper methods for convenient work with environment variables.
 
+## Requirements
+
+Go 1.27.3. `go.mod` requires that version. `mise.toml` and `git/test/Dockerfile` pin the same toolchain.
+
 ## Running tests
 
 ```
