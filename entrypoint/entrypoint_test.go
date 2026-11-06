@@ -228,6 +228,7 @@ Options:
                              "~/.houston/houston.yml")
    --port value              The TCP port the http server is running on (default:
                              44444)
+   --help, -h                show help
 
 `
 
@@ -256,5 +257,6 @@ Options:
 
    --config value, -c value  The configuration file for houston (default: "~/.houston/houston.yml")
    --port value              The TCP port the http server is running on (default: 44444)
+   --help, -h                show help
 
 `
