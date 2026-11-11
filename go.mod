@@ -19,8 +19,8 @@ require (
 	github.com/gruntwork-io/terratest v0.46.16
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mattn/go-zglob v0.0.3
-	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.11.1
+	github.com/sirupsen/logrus v1.10.2
+	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli/v2 v2.27.7
 	golang.org/x/crypto v0.58.0
 	golang.org/x/exp v0.0.0-20221106115401-f9659909a136
@@ -108,7 +108,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/pquerna/otp v1.2.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -126,6 +125,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
