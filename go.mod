@@ -24,7 +24,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	golang.org/x/crypto v0.58.0
 	golang.org/x/exp v0.0.0-20221106115401-f9659909a136
-	golang.org/x/oauth2 v0.36.0
+	golang.org/x/oauth2 v0.38.0
 )
 
 require (
