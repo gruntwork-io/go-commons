@@ -18,7 +18,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gruntwork-io/terratest v0.46.16
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/mattn/go-zglob v0.0.3
+	github.com/mattn/go-zglob v0.0.8
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli/v2 v2.27.7
